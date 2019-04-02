@@ -91,6 +91,7 @@ class LinphoneManager(val context: Context, val core: Core, val coreFactory: Fac
             }
         }
         val proxyAddress: Address = coreFactory.createAddress(sipProxy)
+        proxyAddress.transport = TransportType.Udp
         proxyConfig.enableRegister(true)
         proxyConfig.serverAddr = proxyAddress.asStringUriOnly()
         proxyConfig.identityAddress = address
