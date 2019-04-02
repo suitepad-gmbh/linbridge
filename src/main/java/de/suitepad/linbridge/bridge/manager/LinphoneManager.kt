@@ -24,9 +24,6 @@ class LinphoneManager(val context: Context, val core: Core, val coreFactory: Fac
         copyIfNotExists(context, R.raw.toy_mono, "$baseDir/toymono.wav")
         copyIfNotExists(context, R.raw.lp_default, "$baseDir/linphonerc")
 
-        core.clearProxyConfig()
-        core.clearAllAuthInfo()
-
         core.start()
         iterate()
 
@@ -105,8 +102,6 @@ class LinphoneManager(val context: Context, val core: Core, val coreFactory: Fac
         core.addProxyConfig(proxyConfig)
         core.defaultProxyConfig = proxyConfig
         core.refreshRegisters()
-
-//        iterate()
     }
 
     fun call() {
