@@ -1,6 +1,8 @@
 package de.suitepad.linbridge.bridge.manager
 
 import de.suitepad.linbridge.api.ILinSipListener
+import de.suitepad.linbridge.api.core.AuthenticationState
+import de.suitepad.linbridge.api.core.CallState
 import org.linphone.core.*
 import timber.log.Timber
 
@@ -12,16 +14,15 @@ class BridgeLinphoneCoreListener : OptionalCoreListener, IBridgeLinphoneCoreList
         Timber.i("subscription state changed to $state event name is ${lev?.name}")
     }
 
-    override fun onCallLogUpdated(lc: Core?, newcl: CallLog?) {
-        // do nothing
-    }
-
     override fun onCallStateChanged(lc: Core?, call: Call?, cstate: Call.State?, message: String?) {
         Timber.i("call state [$cstate]")
+        if (cstate != null && call != null) {
+            listener?.callStateChanged(CallState.valueOf(cstate.name), call.remoteAddress.displayName)
+        }
     }
 
     override fun onAuthenticationRequested(lc: Core?, authInfo: AuthInfo?, method: AuthMethod?) {
-        Timber.i("authentication requested")
+        Timber.i("authentication requested $method")
     }
 
     override fun onNetworkReachable(lc: Core?, reachable: Boolean) {
@@ -34,14 +35,9 @@ class BridgeLinphoneCoreListener : OptionalCoreListener, IBridgeLinphoneCoreList
 
     override fun onRegistrationStateChanged(lc: Core?, cfg: ProxyConfig?, cstate: RegistrationState?, message: String?) {
         Timber.i("registration state changed [$cstate] $message")
-    }
-
-    override fun onEcCalibrationAudioInit(lc: Core?) {
-        Timber.i("EC calibration init")
-    }
-
-    override fun onEcCalibrationResult(lc: Core?, status: EcCalibratorStatus?, delayMs: Int) {
-        Timber.i("EC calibration ended status=$status delay=$delayMs")
+        if (cstate != null) {
+            listener?.authenticationStateChanged(AuthenticationState.valueOf(cstate.name))
+        }
     }
 
     override fun onInfoReceived(lc: Core?, call: Call?, msg: InfoMessage?) {
@@ -68,26 +64,11 @@ class BridgeLinphoneCoreListener : OptionalCoreListener, IBridgeLinphoneCoreList
         Timber.i("onPublishStateChanged: publish state changed to $state for event name ${lev?.name}")
     }
 
-    override fun onCallEncryptionChanged(lc: Core?, call: Call?, on: Boolean, authenticationToken: String?) {
-        Timber.i("onCallEncryptionChanged: enabled=$on, token: $authenticationToken")
-    }
-
-    override fun onLogCollectionUploadProgressIndication(lc: Core?, offset: Int, total: Int) {
-    }
-
-    override fun onEcCalibrationAudioUninit(lc: Core?) {
-        Timber.i("onEcCalibrationAudioUninit: ")
-    }
-
     override fun onGlobalStateChanged(lc: Core?, gstate: GlobalState?, message: String?) {
         Timber.i("onGlobalStateChanged: $gstate $message")
     }
 
     override fun onLogCollectionUploadStateChanged(lc: Core?, state: Core.LogCollectionUploadState?, info: String?) {
-    }
-
-    override fun onDtmfReceived(lc: Core?, call: Call?, dtmf: Int) {
-        Timber.i("onDtmfReceived: $dtmf")
     }
 
 }
