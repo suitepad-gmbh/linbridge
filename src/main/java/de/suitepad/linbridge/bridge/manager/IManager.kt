@@ -30,4 +30,6 @@ interface IManager {
      */
     fun authenticate(host: String, port: Int = 5060, username: String, password: String, proxy: String?)
 
+    fun call(destination: String)
+
 }

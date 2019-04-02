@@ -8,7 +8,9 @@ import timber.log.Timber
 import java.io.File
 import java.util.*
 
-class LinphoneManager(val context: Context, val core: Core, val coreFactory: Factory) : IManager {
+class LinphoneManager(val context: Context, val core: Core, val coreFactory: Factory) : OptionalCoreListener, IManager {
+
+    var registrationState: RegistrationState? = null
 
     val keepAliveTask = object : TimerTask() {
         override fun run() {
@@ -68,7 +70,7 @@ class LinphoneManager(val context: Context, val core: Core, val coreFactory: Fac
 
     override fun authenticate(host: String, port: Int, username: String, password: String, proxy: String?) {
 
-        val sipAddress = "sip:$username@$host"
+        val sipAddress = "sip:$username@$host:$port"
         val address: Address = coreFactory.createAddress(sipAddress)
 
         val authenticationInfo = coreFactory.createAuthInfo(address.username, null,
@@ -104,7 +106,25 @@ class LinphoneManager(val context: Context, val core: Core, val coreFactory: Fac
         core.refreshRegisters()
     }
 
-    fun call() {
+    override fun call(destination: String) {
+        if (!core.isNetworkReachable) {
+            // TODO handle this
+        }
+
+        if (!isRegistered()) {
+            // TODO handle this
+        }
+
+
+        if (core.inCall()) {
+            // TODO handle this
+        }
+
+        val address = if (destination.startsWith("<sip") || destination.startsWith("sip"))
+            destination
+        else "sip:$destination@${core.defaultProxyConfig.domain}"
+
+        core.invite(address)
     }
 
     fun copyIfNotExists(context: Context, resource: Int, target: String) {
@@ -121,5 +141,13 @@ class LinphoneManager(val context: Context, val core: Core, val coreFactory: Fac
         outputFile.flush()
         outputFile.close()
     }
+
+    fun isRegistered(): Boolean = registrationState == RegistrationState.Ok
+
+    //<editor-fold desc="CoreListener">
+    override fun onRegistrationStateChanged(lc: Core?, cfg: ProxyConfig?, cstate: RegistrationState?, message: String?) {
+        registrationState = cstate
+    }
+    //</editor-fold>
 
 }

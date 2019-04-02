@@ -17,7 +17,9 @@ class ManagerModule(val debug: Boolean) {
 
     @Provides
     fun linphoneManager(context: Context, core: Core, coreFactory: Factory): IManager {
-        return LinphoneManager(context, core, coreFactory)
+        val linphoneManager = LinphoneManager(context, core, coreFactory)
+        linphoneManager.core.addListener(linphoneManager)
+        return linphoneManager
     }
 
     @Provides

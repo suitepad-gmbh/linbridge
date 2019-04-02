@@ -23,6 +23,7 @@ class BridgeService : Service(), IBridgeService {
         const val ACTION_START_SERVICE = "de.suitepad.linbridge.bridge.BridgeService.ACTION_START_SERVICE"
         const val ACTION_STOP_SERVICE = "de.suitepad.linbridge.bridge.BridgeService.ACTION_STOP_SERVICE"
         const val ACTION_AUTHENTICATE = "de.suitepad.linbridge.bridge.BridgeService.ACTION_AUTHENTICATE"
+        const val ACTION_CALL = "de.suitepad.linbridge.bridge.BridgeService.ACTION_CALL"
 
         const val EXTRA_SIP_SERVER = "SERVER"
         const val EXTRA_SIP_USERNAME = "USERNAME"
@@ -39,6 +40,8 @@ class BridgeService : Service(), IBridgeService {
         const val EXTRA_EL_SUSTAIN = "EL_SUSTAIN"
         const val EXTRA_EL_DOUBLETALK_THRESHOLD = "EL_DOUBLETALK_THRESHOLD"
         const val EXTRA_LIST_CODEC_ENABLED = "CODECS"
+
+        const val EXTRA_DESTINATION = "DESTINATION"
     }
 
     lateinit var component: BridgeServiceComponent
@@ -80,6 +83,9 @@ class BridgeService : Service(), IBridgeService {
                             it.getStringExtra(EXTRA_SIP_PROXY)
                     )
                 }
+                ACTION_CALL -> {
+                    call(it.getStringExtra(EXTRA_DESTINATION))
+                }
             }
         }
         return result
@@ -114,6 +120,14 @@ class BridgeService : Service(), IBridgeService {
 
     override fun getConfig(): SIPConfiguration {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun call(destination: String?) {
+        if (destination == null) {
+            throw NullPointerException("Destination can't be null")
+        }
+
+        linphoneManager.call(destination)
     }
 
     override fun forceRegisterSipListener(listener: ILinSipListener?) {
