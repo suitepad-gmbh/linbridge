@@ -1,12 +1,10 @@
 package de.suitepad.linbridge.bridge.dep
 
 import android.content.Context
+import android.util.Log
 import dagger.Module
 import dagger.Provides
-import de.suitepad.linbridge.bridge.manager.BridgeLinphoneCoreListener
-import de.suitepad.linbridge.bridge.manager.IBridgeLinphoneCoreListener
-import de.suitepad.linbridge.bridge.manager.IManager
-import de.suitepad.linbridge.bridge.manager.LinphoneManager
+import de.suitepad.linbridge.bridge.manager.*
 import org.linphone.core.Core
 import org.linphone.core.CoreListener
 import org.linphone.core.Factory
@@ -16,9 +14,10 @@ import javax.inject.Named
 class ManagerModule(val debug: Boolean) {
 
     @Provides
-    fun linphoneManager(context: Context, core: Core, coreFactory: Factory): IManager {
+    fun linphoneManager(context: Context, core: Core, coreFactory: Factory, @EventLogger logger: CoreListener): IManager {
         val linphoneManager = LinphoneManager(context, core, coreFactory)
         linphoneManager.core.addListener(linphoneManager)
+        linphoneManager.core.addListener(logger)
         return linphoneManager
     }
 
@@ -51,8 +50,17 @@ class ManagerModule(val debug: Boolean) {
     }
 
     @Provides
+    @EventLogger
+    fun linphoneEventLogger(@DebugFlag debug: Boolean): CoreListener {
+        return LinbridgeEventLogger(if (debug) Log.INFO else Log.DEBUG)
+    }
+
+    @Provides
     @DebugFlag
     fun provideIsDebug(): Boolean = debug
+
+    @Named("eventLogger")
+    annotation class EventLogger
 
     @Named("debug")
     annotation class DebugFlag
