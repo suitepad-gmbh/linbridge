@@ -1,8 +1,9 @@
-package de.suitepad.linbridge.bridge.manager
+package de.suitepad.linbridge.dispatcher
 
 import de.suitepad.linbridge.api.ILinbridgeListener
 import de.suitepad.linbridge.api.core.AuthenticationState
 import de.suitepad.linbridge.api.core.CallState
+import de.suitepad.linbridge.manager.OptionalCoreListener
 import org.linphone.core.*
 import timber.log.Timber
 

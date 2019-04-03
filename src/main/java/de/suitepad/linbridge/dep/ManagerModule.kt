@@ -1,10 +1,14 @@
-package de.suitepad.linbridge.bridge.dep
+package de.suitepad.linbridge.dep
 
 import android.content.Context
 import android.util.Log
 import dagger.Module
 import dagger.Provides
-import de.suitepad.linbridge.bridge.manager.*
+import de.suitepad.linbridge.dispatcher.BridgeEventDispatcher
+import de.suitepad.linbridge.dispatcher.IBridgeEventDispatcher
+import de.suitepad.linbridge.manager.IManager
+import de.suitepad.linbridge.logger.LinbridgeEventLogger
+import de.suitepad.linbridge.manager.LinbridgeManager
 import org.linphone.core.Core
 import org.linphone.core.Factory
 import javax.inject.Named

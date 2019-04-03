@@ -1,4 +1,4 @@
-package de.suitepad.linbridge.bridge.manager
+package de.suitepad.linbridge.dispatcher
 
 import de.suitepad.linbridge.api.ILinbridgeListener
 

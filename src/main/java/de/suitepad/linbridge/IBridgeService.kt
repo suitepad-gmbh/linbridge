@@ -1,4 +1,4 @@
-package de.suitepad.linbridge.bridge
+package de.suitepad.linbridge
 
 import android.os.IBinder
 import de.suitepad.linbridge.api.ILinbridge

@@ -1,21 +1,19 @@
-package de.suitepad.linbridge.bridge
+package de.suitepad.linbridge
 
 import android.app.Notification
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.*
-import de.suitepad.linbridge.R
 import de.suitepad.linbridge.api.ILinbridgeListener
 import de.suitepad.linbridge.api.SIPConfiguration
 import de.suitepad.linbridge.api.core.CallError
-import de.suitepad.linbridge.app.BridgeApplication
-import de.suitepad.linbridge.bridge.dep.BridgeModule
-import de.suitepad.linbridge.bridge.dep.BridgeServiceComponent
-import de.suitepad.linbridge.bridge.dep.DaggerBridgeServiceComponent
-import de.suitepad.linbridge.bridge.dep.ManagerModule
-import de.suitepad.linbridge.bridge.manager.IBridgeEventDispatcher
-import de.suitepad.linbridge.bridge.manager.IManager
+import de.suitepad.linbridge.dep.BridgeModule
+import de.suitepad.linbridge.dep.BridgeServiceComponent
+import de.suitepad.linbridge.dep.DaggerBridgeServiceComponent
+import de.suitepad.linbridge.dep.ManagerModule
+import de.suitepad.linbridge.dispatcher.IBridgeEventDispatcher
+import de.suitepad.linbridge.manager.IManager
 import timber.log.Timber
 import java.io.File
 import java.lang.NullPointerException
@@ -24,12 +22,12 @@ import javax.inject.Inject
 class BridgeService : Service(), IBridgeService {
 
     companion object {
-        const val ACTION_START_SERVICE = "de.suitepad.linbridge.bridge.BridgeService.ACTION_START_SERVICE"
-        const val ACTION_STOP_SERVICE = "de.suitepad.linbridge.bridge.BridgeService.ACTION_STOP_SERVICE"
-        const val ACTION_AUTHENTICATE = "de.suitepad.linbridge.bridge.BridgeService.ACTION_AUTHENTICATE"
-        const val ACTION_CALL = "de.suitepad.linbridge.bridge.BridgeService.ACTION_CALL"
-        const val ACTION_ANSWER = "de.suitepad.linbridge.bridge.BridgeService.ACTION_ANSWER"
-        const val ACTION_REJECT = "de.suitepad.linbridge.bridge.BridgeService.ACTION_REJECT"
+        const val ACTION_START_SERVICE = "de.suitepad.linbridge.BridgeService.ACTION_START_SERVICE"
+        const val ACTION_STOP_SERVICE = "de.suitepad.linbridge.BridgeService.ACTION_STOP_SERVICE"
+        const val ACTION_AUTHENTICATE = "de.suitepad.linbridge.BridgeService.ACTION_AUTHENTICATE"
+        const val ACTION_CALL = "de.suitepad.linbridge.BridgeService.ACTION_CALL"
+        const val ACTION_ANSWER = "de.suitepad.linbridge.BridgeService.ACTION_ANSWER"
+        const val ACTION_REJECT = "de.suitepad.linbridge.BridgeService.ACTION_REJECT"
 
         const val EXTRA_SIP_SERVER = "SERVER"
         const val EXTRA_SIP_USERNAME = "USERNAME"

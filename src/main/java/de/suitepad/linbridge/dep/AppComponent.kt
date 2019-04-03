@@ -1,7 +1,7 @@
-package de.suitepad.linbridge.app.dep
+package de.suitepad.linbridge.dep
 
 import dagger.Component
-import de.suitepad.linbridge.app.BridgeApplication
+import de.suitepad.linbridge.BridgeApplication
 import javax.inject.Scope
 
 @Component

@@ -1,4 +1,4 @@
-package de.suitepad.linbridge.bridge.manager
+package de.suitepad.linbridge.logger
 
 import android.util.Log
 import org.linphone.core.*

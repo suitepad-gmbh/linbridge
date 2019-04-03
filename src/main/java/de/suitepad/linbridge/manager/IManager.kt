@@ -1,4 +1,4 @@
-package de.suitepad.linbridge.bridge.manager
+package de.suitepad.linbridge.manager
 
 import de.suitepad.linbridge.api.SIPConfiguration
 import de.suitepad.linbridge.api.core.CallError

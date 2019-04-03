@@ -1,4 +1,4 @@
-package de.suitepad.linbridge.bridge.manager
+package de.suitepad.linbridge.manager
 
 import android.content.Context
 import de.suitepad.linbridge.api.SIPConfiguration
