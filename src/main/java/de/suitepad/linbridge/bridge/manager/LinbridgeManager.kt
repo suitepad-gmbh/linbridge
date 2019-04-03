@@ -8,7 +8,7 @@ import timber.log.Timber
 import java.io.File
 import java.util.*
 
-class LinphoneManager(val context: Context, val core: Core, val coreFactory: Factory) : OptionalCoreListener, IManager {
+class LinbridgeManager(val context: Context, val core: Core, val coreFactory: Factory) : OptionalCoreListener, IManager {
 
     var registrationState: RegistrationState? = null
 

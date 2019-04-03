@@ -1,14 +1,14 @@
 package de.suitepad.linbridge.bridge.manager
 
-import de.suitepad.linbridge.api.ILinSipListener
+import de.suitepad.linbridge.api.ILinbridgeListener
 import de.suitepad.linbridge.api.core.AuthenticationState
 import de.suitepad.linbridge.api.core.CallState
 import org.linphone.core.*
 import timber.log.Timber
 
-class BridgeEventDispatcher : OptionalCoreListener, IBridgeLinphoneCoreListener {
+class BridgeEventDispatcher : OptionalCoreListener, IBridgeEventListener {
 
-    override var listener: ILinSipListener? = null
+    override var listener: ILinbridgeListener? = null
 
     override fun onSubscriptionStateChanged(lc: Core?, lev: Event?, state: SubscriptionState?) {
         Timber.i("subscription state changed to $state event name is ${lev?.name}")

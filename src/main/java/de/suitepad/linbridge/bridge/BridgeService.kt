@@ -4,14 +4,14 @@ import android.app.Notification
 import android.app.Service
 import android.content.Intent
 import android.os.*
-import de.suitepad.linbridge.api.ILinSipListener
+import de.suitepad.linbridge.api.ILinbridgeListener
 import de.suitepad.linbridge.api.SIPConfiguration
 import de.suitepad.linbridge.app.BridgeApplication
 import de.suitepad.linbridge.bridge.dep.BridgeModule
 import de.suitepad.linbridge.bridge.dep.BridgeServiceComponent
 import de.suitepad.linbridge.bridge.dep.DaggerBridgeServiceComponent
 import de.suitepad.linbridge.bridge.dep.ManagerModule
-import de.suitepad.linbridge.bridge.manager.IBridgeLinphoneCoreListener
+import de.suitepad.linbridge.bridge.manager.IBridgeEventListener
 import de.suitepad.linbridge.bridge.manager.IManager
 import timber.log.Timber
 import java.lang.NullPointerException
@@ -50,7 +50,7 @@ class BridgeService : Service(), IBridgeService {
     lateinit var linphoneManager: IManager
 
     @Inject
-    lateinit var linphoneCoreListener: IBridgeLinphoneCoreListener
+    lateinit var eventListener: IBridgeEventListener
 
     override fun onCreate() {
         super.onCreate()
@@ -130,23 +130,23 @@ class BridgeService : Service(), IBridgeService {
         linphoneManager.call(destination)
     }
 
-    override fun forceRegisterSipListener(listener: ILinSipListener?) {
+    override fun forceRegisterSipListener(listener: ILinbridgeListener?) {
         if (listener == null)
             throw NullPointerException("passed a null listener")
 
-        linphoneCoreListener.listener = listener
+        eventListener.listener = listener
     }
 
-    override fun registerSipListener(listener: ILinSipListener?): Boolean {
+    override fun registerSipListener(listener: ILinbridgeListener?): Boolean {
         if (listener == null) {
             throw NullPointerException("passed a null listener")
         }
 
-        if (linphoneCoreListener.listener != null) {
+        if (eventListener.listener != null) {
             return false
         }
 
-        linphoneCoreListener.listener = listener
+        eventListener.listener = listener
         return true
     }
 

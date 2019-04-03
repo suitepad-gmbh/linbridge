@@ -6,7 +6,6 @@ import dagger.Module
 import dagger.Provides
 import de.suitepad.linbridge.bridge.manager.*
 import org.linphone.core.Core
-import org.linphone.core.CoreListener
 import org.linphone.core.Factory
 import javax.inject.Named
 
@@ -15,7 +14,7 @@ class ManagerModule(val debug: Boolean) {
 
     @Provides
     fun linphoneManager(context: Context, core: Core, coreFactory: Factory, logger: LinbridgeEventLogger): IManager {
-        val linphoneManager = LinphoneManager(context, core, coreFactory)
+        val linphoneManager = LinbridgeManager(context, core, coreFactory)
         linphoneManager.core.addListener(linphoneManager)
         linphoneManager.core.addListener(logger)
         return linphoneManager
@@ -33,7 +32,7 @@ class ManagerModule(val debug: Boolean) {
     }
 
     @Provides
-    fun bridgeLinphoneCoreListener(coreListener: BridgeEventDispatcher): IBridgeLinphoneCoreListener = coreListener
+    fun bridgeLinphoneCoreListener(coreListener: BridgeEventDispatcher): IBridgeEventListener = coreListener
 
     @Provides
     fun linphoneCoreListener(): BridgeEventDispatcher {
