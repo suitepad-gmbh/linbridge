@@ -2,8 +2,10 @@ package de.suitepad.linbridge.bridge
 
 import android.app.Notification
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.*
+import de.suitepad.linbridge.R
 import de.suitepad.linbridge.api.ILinbridgeListener
 import de.suitepad.linbridge.api.SIPConfiguration
 import de.suitepad.linbridge.api.core.CallError
@@ -15,6 +17,7 @@ import de.suitepad.linbridge.bridge.dep.ManagerModule
 import de.suitepad.linbridge.bridge.manager.IBridgeEventListener
 import de.suitepad.linbridge.bridge.manager.IManager
 import timber.log.Timber
+import java.io.File
 import java.lang.NullPointerException
 import javax.inject.Inject
 
@@ -62,6 +65,13 @@ class BridgeService : Service(), IBridgeService {
                 .build()
 
         component.inject(this)
+
+
+        val baseDir = filesDir.absolutePath
+        copyIfNotExists(this, R.raw.rootca, "$baseDir/rootca.pem")
+        copyIfNotExists(this, R.raw.ringback, "$baseDir/ringback.wav")
+        copyIfNotExists(this, R.raw.toy_mono, "$baseDir/toymono.wav")
+        copyIfNotExists(this, R.raw.lp_default, "$baseDir/linphonerc")
 
         linphoneManager.start()
         startForeground(1, Notification())
@@ -156,6 +166,21 @@ class BridgeService : Service(), IBridgeService {
 
     override fun stopService() {
         stopSelf()
+    }
+
+    fun copyIfNotExists(context: Context, resource: Int, target: String) {
+        val outputFile = File(target)
+        if (!outputFile.exists()) {
+            copyFromPackage(context, resource, target)
+        }
+    }
+
+    fun copyFromPackage(context: Context, resource: Int, target: String) {
+        val outputFile = File(target).outputStream()
+        val stream = context.resources.openRawResource(resource)
+        stream.copyTo(outputFile)
+        outputFile.flush()
+        outputFile.close()
     }
 
     override fun onBind(intent: Intent?): IBinder? {

@@ -13,8 +13,8 @@ import javax.inject.Named
 class ManagerModule(val debug: Boolean) {
 
     @Provides
-    fun linphoneManager(context: Context, core: Core, coreFactory: Factory, logger: LinbridgeEventLogger): IManager {
-        val linphoneManager = LinbridgeManager(context, core, coreFactory)
+    fun linphoneManager(core: Core, logger: LinbridgeEventLogger): IManager {
+        val linphoneManager = LinbridgeManager(core)
         linphoneManager.core.addListener(linphoneManager)
         linphoneManager.core.addListener(logger)
         return linphoneManager

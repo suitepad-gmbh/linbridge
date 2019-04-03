@@ -9,7 +9,7 @@ import timber.log.Timber
 import java.io.File
 import java.util.*
 
-class LinbridgeManager(val context: Context, val core: Core, val coreFactory: Factory) : OptionalCoreListener, IManager {
+class LinbridgeManager(val core: Core) : OptionalCoreListener, IManager {
 
     var registrationState: RegistrationState? = null
 
@@ -21,18 +21,14 @@ class LinbridgeManager(val context: Context, val core: Core, val coreFactory: Fa
     var keepAliveTimer: Timer? = null
 
     override fun start() {
-        val baseDir = context.filesDir.absolutePath
-        copyIfNotExists(context, R.raw.rootca, "$baseDir/rootca.pem")
-        copyIfNotExists(context, R.raw.ringback, "$baseDir/ringback.wav")
-        copyIfNotExists(context, R.raw.toy_mono, "$baseDir/toymono.wav")
-        copyIfNotExists(context, R.raw.lp_default, "$baseDir/linphonerc")
 
         core.start()
         iterate()
 
-        core.rootCa = "$baseDir/rootca.pem"
-        core.ringback = "$baseDir/ringback.wav"
-        core.ring = "$baseDir/toymono.wav"
+//        TODO: re-implement this
+//        core.rootCa = "$baseDir/rootca.pem"
+//        core.ringback = "$baseDir/ringback.wav"
+//        core.ring = "$baseDir/toymono.wav"
 
         Timber.i(core.config.dumpAsXml())
 
@@ -72,9 +68,9 @@ class LinbridgeManager(val context: Context, val core: Core, val coreFactory: Fa
     override fun authenticate(host: String, port: Int, username: String, password: String, proxy: String?) {
 
         val sipAddress = "sip:$username@$host:$port"
-        val address: Address = coreFactory.createAddress(sipAddress)
+        val address: Address = core.createAddress(sipAddress)
 
-        val authenticationInfo = coreFactory.createAuthInfo(address.username, null,
+        val authenticationInfo = core.createAuthInfo(address.username, null,
                 password, null, null, address.domain)
         core.addAuthInfo(authenticationInfo)
 
@@ -90,7 +86,7 @@ class LinbridgeManager(val context: Context, val core: Core, val coreFactory: Fa
                 sipProxy = proxy
             }
         }
-        val proxyAddress: Address = coreFactory.createAddress(sipProxy)
+        val proxyAddress: Address = core.createAddress(sipProxy)
         proxyAddress.transport = TransportType.Udp
         proxyConfig.enableRegister(true)
         proxyConfig.serverAddr = proxyAddress.asStringUriOnly()
@@ -126,21 +122,6 @@ class LinbridgeManager(val context: Context, val core: Core, val coreFactory: Fa
 
         core.invite(address)
         return null;
-    }
-
-    fun copyIfNotExists(context: Context, resource: Int, target: String) {
-        val outputFile = File(target)
-        if (!outputFile.exists()) {
-            copyFromPackage(context, resource, target)
-        }
-    }
-
-    fun copyFromPackage(context: Context, resource: Int, target: String) {
-        val outputFile = File(target).outputStream()
-        val stream = context.resources.openRawResource(resource)
-        stream.copyTo(outputFile)
-        outputFile.flush()
-        outputFile.close()
     }
 
     fun isRegistered(): Boolean = registrationState == RegistrationState.Ok
