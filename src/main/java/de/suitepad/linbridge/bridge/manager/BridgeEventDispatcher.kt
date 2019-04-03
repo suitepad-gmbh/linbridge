@@ -6,7 +6,7 @@ import de.suitepad.linbridge.api.core.CallState
 import org.linphone.core.*
 import timber.log.Timber
 
-class BridgeLinphoneCoreListener : OptionalCoreListener, IBridgeLinphoneCoreListener {
+class BridgeEventDispatcher : OptionalCoreListener, IBridgeLinphoneCoreListener {
 
     override var listener: ILinSipListener? = null
 

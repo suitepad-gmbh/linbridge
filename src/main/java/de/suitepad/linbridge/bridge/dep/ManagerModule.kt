@@ -14,7 +14,7 @@ import javax.inject.Named
 class ManagerModule(val debug: Boolean) {
 
     @Provides
-    fun linphoneManager(context: Context, core: Core, coreFactory: Factory, @EventLogger logger: CoreListener): IManager {
+    fun linphoneManager(context: Context, core: Core, coreFactory: Factory, logger: LinbridgeEventLogger): IManager {
         val linphoneManager = LinphoneManager(context, core, coreFactory)
         linphoneManager.core.addListener(linphoneManager)
         linphoneManager.core.addListener(logger)
@@ -23,7 +23,7 @@ class ManagerModule(val debug: Boolean) {
 
     @Provides
     fun linphoneCore(
-            linphoneCoreListener: CoreListener,
+            linphoneCoreListener: BridgeEventDispatcher,
             factory: Factory,
             context: Context
     ): Core {
@@ -33,13 +33,11 @@ class ManagerModule(val debug: Boolean) {
     }
 
     @Provides
-    fun bridgeLinphoneCoreListener(coreListener: CoreListener): IBridgeLinphoneCoreListener {
-        return coreListener as IBridgeLinphoneCoreListener
-    }
+    fun bridgeLinphoneCoreListener(coreListener: BridgeEventDispatcher): IBridgeLinphoneCoreListener = coreListener
 
     @Provides
-    fun linphoneCoreListener(): CoreListener {
-        return BridgeLinphoneCoreListener()
+    fun linphoneCoreListener(): BridgeEventDispatcher {
+        return BridgeEventDispatcher()
     }
 
     @Provides
@@ -50,17 +48,13 @@ class ManagerModule(val debug: Boolean) {
     }
 
     @Provides
-    @EventLogger
-    fun linphoneEventLogger(@DebugFlag debug: Boolean): CoreListener {
+    fun linphoneEventLogger(@DebugFlag debug: Boolean): LinbridgeEventLogger {
         return LinbridgeEventLogger(if (debug) Log.INFO else Log.DEBUG)
     }
 
     @Provides
     @DebugFlag
     fun provideIsDebug(): Boolean = debug
-
-    @Named("eventLogger")
-    annotation class EventLogger
 
     @Named("debug")
     annotation class DebugFlag
