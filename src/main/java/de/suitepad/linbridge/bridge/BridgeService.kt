@@ -14,7 +14,7 @@ import de.suitepad.linbridge.bridge.dep.BridgeModule
 import de.suitepad.linbridge.bridge.dep.BridgeServiceComponent
 import de.suitepad.linbridge.bridge.dep.DaggerBridgeServiceComponent
 import de.suitepad.linbridge.bridge.dep.ManagerModule
-import de.suitepad.linbridge.bridge.manager.IBridgeEventListener
+import de.suitepad.linbridge.bridge.manager.IBridgeEventDispatcher
 import de.suitepad.linbridge.bridge.manager.IManager
 import timber.log.Timber
 import java.io.File
@@ -54,10 +54,17 @@ class BridgeService : Service(), IBridgeService {
     lateinit var linphoneManager: IManager
 
     @Inject
-    lateinit var eventListener: IBridgeEventListener
+    lateinit var eventDispatcher: IBridgeEventDispatcher
 
     override fun onCreate() {
         super.onCreate()
+
+        val baseDir = filesDir.absolutePath
+        copyIfNotExists(this, R.raw.rootca, "$baseDir/rootca.pem")
+        copyIfNotExists(this, R.raw.ringback, "$baseDir/ringback.wav")
+        copyIfNotExists(this, R.raw.toy_mono, "$baseDir/toymono.wav")
+        copyIfNotExists(this, R.raw.lp_default, "$baseDir/linphonerc")
+
         component = DaggerBridgeServiceComponent.builder()
                 .appComponent(BridgeApplication.getApplication(this).component)
                 .bridgeModule(BridgeModule(this))
@@ -65,13 +72,6 @@ class BridgeService : Service(), IBridgeService {
                 .build()
 
         component.inject(this)
-
-
-        val baseDir = filesDir.absolutePath
-        copyIfNotExists(this, R.raw.rootca, "$baseDir/rootca.pem")
-        copyIfNotExists(this, R.raw.ringback, "$baseDir/ringback.wav")
-        copyIfNotExists(this, R.raw.toy_mono, "$baseDir/toymono.wav")
-        copyIfNotExists(this, R.raw.lp_default, "$baseDir/linphonerc")
 
         linphoneManager.start()
         startForeground(1, Notification())
@@ -148,7 +148,7 @@ class BridgeService : Service(), IBridgeService {
         if (listener == null)
             throw NullPointerException("passed a null listener")
 
-        eventListener.listener = listener
+        eventDispatcher.listener = listener
     }
 
     override fun registerSipListener(listener: ILinbridgeListener?): Boolean {
@@ -156,11 +156,11 @@ class BridgeService : Service(), IBridgeService {
             throw NullPointerException("passed a null listener")
         }
 
-        if (eventListener.listener != null) {
+        if (eventDispatcher.listener != null) {
             return false
         }
 
-        eventListener.listener = listener
+        eventDispatcher.listener = listener
         return true
     }
 

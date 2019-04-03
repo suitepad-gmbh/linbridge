@@ -2,7 +2,7 @@ package de.suitepad.linbridge.bridge.manager
 
 import de.suitepad.linbridge.api.ILinbridgeListener
 
-interface IBridgeEventListener {
+interface IBridgeEventDispatcher {
 
     var listener: ILinbridgeListener?
 

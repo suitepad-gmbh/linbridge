@@ -4,7 +4,7 @@ import android.content.Context
 import dagger.Component
 import de.suitepad.linbridge.app.dep.AppComponent
 import de.suitepad.linbridge.bridge.BridgeService
-import de.suitepad.linbridge.bridge.manager.IBridgeEventListener
+import de.suitepad.linbridge.bridge.manager.IBridgeEventDispatcher
 import de.suitepad.linbridge.bridge.manager.IManager
 import javax.inject.Scope
 
@@ -14,7 +14,7 @@ interface BridgeServiceComponent {
 
     fun provideLinphoneManager(): IManager
 
-    fun provideLinphoneListener(): IBridgeEventListener
+    fun provideLinphoneListener(): IBridgeEventDispatcher
 
     fun provideServiceContext(): Context
 

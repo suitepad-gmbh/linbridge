@@ -1,15 +1,13 @@
 package de.suitepad.linbridge.bridge.manager
 
 import android.content.Context
-import de.suitepad.linbridge.R
 import de.suitepad.linbridge.api.SIPConfiguration
 import de.suitepad.linbridge.api.core.CallError
 import org.linphone.core.*
 import timber.log.Timber
-import java.io.File
 import java.util.*
 
-class LinbridgeManager(val core: Core) : OptionalCoreListener, IManager {
+class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener, IManager {
 
     var registrationState: RegistrationState? = null
 
@@ -20,17 +18,11 @@ class LinbridgeManager(val core: Core) : OptionalCoreListener, IManager {
     }
     var keepAliveTimer: Timer? = null
 
-    override fun start() {
-
-        core.start()
-        iterate()
-
-//        TODO: re-implement this
-//        core.rootCa = "$baseDir/rootca.pem"
-//        core.ringback = "$baseDir/ringback.wav"
-//        core.ring = "$baseDir/toymono.wav"
-
-        Timber.i(core.config.dumpAsXml())
+    init {
+        val baseDir = context.filesDir.absolutePath
+        core.rootCa = "$baseDir/rootca.pem"
+        core.ringback = "$baseDir/ringback.wav"
+        core.ring = "$baseDir/toymono.wav"
 
         core.disableChat(Reason.NotImplemented)
         core.enableVideoDisplay(false)
@@ -38,13 +30,14 @@ class LinbridgeManager(val core: Core) : OptionalCoreListener, IManager {
         core.enableVideoMulticast(false)
         core.enableVideoPreview(false)
 
-        core.sipTransportTimeout = 50
-        core.transports = core.transports.apply {
-            tlsPort = -1
-            tcpPort = -1
-        }
+        core.setUserAgent(BuildConfig.APPLICATION_ID, BuildConfig.VERSION_NAME)
 
-        core.setUserAgent("LinBridge", "1.0.0")
+        Timber.i(core.config.dumpAsXml())
+    }
+
+    override fun start() {
+        core.start()
+        iterate()
     }
 
     private fun iterate() {
