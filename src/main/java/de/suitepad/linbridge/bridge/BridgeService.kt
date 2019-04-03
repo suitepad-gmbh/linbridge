@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.*
 import de.suitepad.linbridge.api.ILinbridgeListener
 import de.suitepad.linbridge.api.SIPConfiguration
+import de.suitepad.linbridge.api.core.CallError
 import de.suitepad.linbridge.app.BridgeApplication
 import de.suitepad.linbridge.bridge.dep.BridgeModule
 import de.suitepad.linbridge.bridge.dep.BridgeServiceComponent
@@ -86,6 +87,9 @@ class BridgeService : Service(), IBridgeService {
                 ACTION_CALL -> {
                     call(it.getStringExtra(EXTRA_DESTINATION))
                 }
+                else -> {
+                    // do nothing
+                }
             }
         }
         return result
@@ -122,12 +126,12 @@ class BridgeService : Service(), IBridgeService {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun call(destination: String?) {
+    override fun call(destination: String?): CallError? {
         if (destination == null) {
             throw NullPointerException("Destination can't be null")
         }
 
-        linphoneManager.call(destination)
+        return linphoneManager.call(destination)
     }
 
     override fun forceRegisterSipListener(listener: ILinbridgeListener?) {

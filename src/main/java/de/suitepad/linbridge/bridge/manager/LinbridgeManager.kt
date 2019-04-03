@@ -3,6 +3,7 @@ package de.suitepad.linbridge.bridge.manager
 import android.content.Context
 import de.suitepad.linbridge.R
 import de.suitepad.linbridge.api.SIPConfiguration
+import de.suitepad.linbridge.api.core.CallError
 import org.linphone.core.*
 import timber.log.Timber
 import java.io.File
@@ -106,18 +107,17 @@ class LinbridgeManager(val context: Context, val core: Core, val coreFactory: Fa
         core.refreshRegisters()
     }
 
-    override fun call(destination: String) {
+    override fun call(destination: String): CallError? {
         if (!core.isNetworkReachable) {
-            // TODO handle this
+            return CallError.NetworkUnreachable
         }
 
         if (!isRegistered()) {
-            // TODO handle this
+            return CallError.NotAuthenticated
         }
 
-
         if (core.inCall()) {
-            // TODO handle this
+            return CallError.AlreadyInCall
         }
 
         val address = if (destination.startsWith("<sip") || destination.startsWith("sip"))
@@ -125,6 +125,7 @@ class LinbridgeManager(val context: Context, val core: Core, val coreFactory: Fa
         else "sip:$destination@${core.defaultProxyConfig.domain}"
 
         core.invite(address)
+        return null;
     }
 
     fun copyIfNotExists(context: Context, resource: Int, target: String) {

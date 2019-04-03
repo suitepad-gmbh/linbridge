@@ -1,6 +1,7 @@
 package de.suitepad.linbridge.bridge.manager
 
 import de.suitepad.linbridge.api.SIPConfiguration
+import de.suitepad.linbridge.api.core.CallError
 
 
 interface IManager {
@@ -30,6 +31,6 @@ interface IManager {
      */
     fun authenticate(host: String, port: Int = 5060, username: String, password: String, proxy: String?)
 
-    fun call(destination: String)
+    fun call(destination: String): CallError?
 
 }
