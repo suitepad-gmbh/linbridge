@@ -28,6 +28,8 @@ class BridgeService : Service(), IBridgeService {
         const val ACTION_STOP_SERVICE = "de.suitepad.linbridge.bridge.BridgeService.ACTION_STOP_SERVICE"
         const val ACTION_AUTHENTICATE = "de.suitepad.linbridge.bridge.BridgeService.ACTION_AUTHENTICATE"
         const val ACTION_CALL = "de.suitepad.linbridge.bridge.BridgeService.ACTION_CALL"
+        const val ACTION_ANSWER = "de.suitepad.linbridge.bridge.BridgeService.ACTION_ANSWER"
+        const val ACTION_REJECT = "de.suitepad.linbridge.bridge.BridgeService.ACTION_REJECT"
 
         const val EXTRA_SIP_SERVER = "SERVER"
         const val EXTRA_SIP_USERNAME = "USERNAME"
@@ -96,6 +98,12 @@ class BridgeService : Service(), IBridgeService {
                 }
                 ACTION_CALL -> {
                     call(it.getStringExtra(EXTRA_DESTINATION))
+                }
+                ACTION_ANSWER -> {
+                    answerCall()
+                }
+                ACTION_REJECT -> {
+                    rejectCall()
                 }
                 else -> {
                     // do nothing
@@ -166,6 +174,14 @@ class BridgeService : Service(), IBridgeService {
 
     override fun stopService() {
         stopSelf()
+    }
+
+    override fun answerCall(): CallError? {
+        return linphoneManager.answerCall()
+    }
+
+    override fun rejectCall(): CallError? {
+        return linphoneManager.rejectCall()
     }
 
     fun copyIfNotExists(context: Context, resource: Int, target: String) {

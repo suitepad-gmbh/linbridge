@@ -33,4 +33,8 @@ interface IManager {
 
     fun call(destination: String): CallError?
 
+    fun answerCall(): CallError?
+
+    fun rejectCall(): CallError?
+
 }

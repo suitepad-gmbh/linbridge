@@ -56,6 +56,7 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
         core.playbackGainDb = settings?.speakerGain?.toFloat() ?: 0f
         core.enableEchoCancellation(settings?.echoCancellation ?: false)
         core.enableEchoLimiter(settings?.echoLimiter ?: false)
+        // TODO finish setting up core
     }
 
     override fun authenticate(host: String, port: Int, username: String, password: String, proxy: String?) {
@@ -114,7 +115,25 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
         else "sip:$destination@${core.defaultProxyConfig.domain}"
 
         core.invite(address)
-        return null;
+        return null
+    }
+
+    override fun answerCall(): CallError? {
+        if (core.currentCall == null) {
+            return CallError.NoCallAvailable
+        }
+
+        core.currentCall.accept()
+        return null
+    }
+
+    override fun rejectCall(): CallError? {
+        if (core.currentCall == null) {
+            return CallError.NoCallAvailable
+        }
+
+        core.currentCall.terminate()
+        return null
     }
 
     fun isRegistered(): Boolean = registrationState == RegistrationState.Ok
