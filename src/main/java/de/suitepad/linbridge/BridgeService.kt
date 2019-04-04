@@ -22,12 +22,14 @@ import javax.inject.Inject
 class BridgeService : Service(), IBridgeService {
 
     companion object {
-        const val ACTION_START_SERVICE = "de.suitepad.linbridge.BridgeService.ACTION_START_SERVICE"
-        const val ACTION_STOP_SERVICE = "de.suitepad.linbridge.BridgeService.ACTION_STOP_SERVICE"
-        const val ACTION_AUTHENTICATE = "de.suitepad.linbridge.BridgeService.ACTION_AUTHENTICATE"
-        const val ACTION_CALL = "de.suitepad.linbridge.BridgeService.ACTION_CALL"
-        const val ACTION_ANSWER = "de.suitepad.linbridge.BridgeService.ACTION_ANSWER"
-        const val ACTION_REJECT = "de.suitepad.linbridge.BridgeService.ACTION_REJECT"
+        const val SERVICE_NAME = "de.suitepad.linbridge.BridgeService"
+
+        const val EXTRA_ACTION = "ACTION"
+        const val ACTION_STOP_SERVICE = "STOP"
+        const val ACTION_AUTHENTICATE = "AUTHENTICATE"
+        const val ACTION_CALL = "CALL"
+        const val ACTION_ANSWER = "ANSWER"
+        const val ACTION_REJECT = "REJECT"
 
         const val EXTRA_SIP_SERVER = "SERVER"
         const val EXTRA_SIP_USERNAME = "USERNAME"
@@ -80,7 +82,7 @@ class BridgeService : Service(), IBridgeService {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         var result = super.onStartCommand(intent, flags, startId)
         intent?.let {
-            when (it.action) {
+            when (it.getStringExtra(EXTRA_ACTION)) {
                 ACTION_STOP_SERVICE -> {
                     Timber.d("stopping service ${Integer.toHexString(hashCode())}")
                     stopService()
