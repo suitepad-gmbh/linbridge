@@ -3,6 +3,7 @@ package de.suitepad.linbridge.manager
 import android.content.Context
 import de.suitepad.linbridge.api.SIPConfiguration
 import de.suitepad.linbridge.api.core.CallError
+import de.suitepad.linbridge.configure
 import org.linphone.core.*
 import timber.log.Timber
 import java.util.*
@@ -51,12 +52,8 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
         keepAliveTimer?.cancel()
     }
 
-    override fun configure(settings: SIPConfiguration?) {
-        core.micGainDb = settings?.microphoneGain?.toFloat() ?: 0f
-        core.playbackGainDb = settings?.speakerGain?.toFloat() ?: 0f
-        core.enableEchoCancellation(settings?.echoCancellation ?: false)
-        core.enableEchoLimiter(settings?.echoLimiter ?: false)
-        // TODO finish setting up core
+    override fun configure(settings: SIPConfiguration) {
+        settings.configure(core)
     }
 
     override fun authenticate(host: String, port: Int, username: String, password: String, proxy: String?) {

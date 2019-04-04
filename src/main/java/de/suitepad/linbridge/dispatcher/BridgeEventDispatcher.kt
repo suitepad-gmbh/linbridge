@@ -3,6 +3,7 @@ package de.suitepad.linbridge.dispatcher
 import de.suitepad.linbridge.api.ILinbridgeListener
 import de.suitepad.linbridge.api.core.AuthenticationState
 import de.suitepad.linbridge.api.core.CallState
+import de.suitepad.linbridge.configure
 import de.suitepad.linbridge.manager.OptionalCoreListener
 import org.linphone.core.*
 import timber.log.Timber
@@ -10,6 +11,8 @@ import timber.log.Timber
 class BridgeEventDispatcher : OptionalCoreListener, IBridgeEventDispatcher {
 
     override var listener: ILinbridgeListener? = null
+
+    override var shouldReconfigure = true
 
     override fun onSubscriptionStateChanged(lc: Core?, lev: Event?, state: SubscriptionState?) {
         Timber.i("subscription state changed to $state event name is ${lev?.name}")
@@ -54,7 +57,6 @@ class BridgeEventDispatcher : OptionalCoreListener, IBridgeEventDispatcher {
 
     override fun onConfiguringStatus(lc: Core?, status: ConfiguringState?, message: String?) {
         Timber.i("onConfiguringStatus: $status $message")
-        lc?.config?.sync()
     }
 
     override fun onCallCreated(lc: Core?, call: Call?) {
@@ -67,6 +69,16 @@ class BridgeEventDispatcher : OptionalCoreListener, IBridgeEventDispatcher {
 
     override fun onGlobalStateChanged(lc: Core?, gstate: GlobalState?, message: String?) {
         Timber.i("onGlobalStateChanged: $gstate $message")
+        when (gstate) {
+            GlobalState.Configuring -> {
+                if (shouldReconfigure && lc != null) {
+                    listener?.configuration?.configure(lc)
+                }
+            }
+            else -> {
+                // do nothing
+            }
+        }
     }
 
     override fun onLogCollectionUploadStateChanged(lc: Core?, state: Core.LogCollectionUploadState?, info: String?) {

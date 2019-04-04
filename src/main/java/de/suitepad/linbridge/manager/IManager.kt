@@ -19,7 +19,7 @@ interface IManager {
     /**
      * configures the SIP client using a [SIPConfiguration], pass null to reset to default configuration
      */
-    fun configure(settings: SIPConfiguration?)
+    fun configure(settings: SIPConfiguration)
 
     /**
      * authenticates and connects to the SIP server

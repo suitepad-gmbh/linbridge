@@ -12,4 +12,5 @@ interface IBridgeService : ILinbridge {
         override fun asBinder(): IBinder = super.asBinder()
     }
 
+    fun startService()
 }

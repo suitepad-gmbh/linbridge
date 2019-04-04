@@ -14,8 +14,11 @@ import de.suitepad.linbridge.dep.DaggerBridgeServiceComponent
 import de.suitepad.linbridge.dep.ManagerModule
 import de.suitepad.linbridge.dispatcher.IBridgeEventDispatcher
 import de.suitepad.linbridge.manager.IManager
+import org.linphone.core.Core
 import timber.log.Timber
 import java.io.File
+import java.lang.IllegalArgumentException
+import java.lang.IllegalStateException
 import java.lang.NullPointerException
 import javax.inject.Inject
 
@@ -25,11 +28,6 @@ class BridgeService : Service(), IBridgeService {
         const val SERVICE_NAME = "de.suitepad.linbridge.BridgeService"
 
         const val EXTRA_ACTION = "ACTION"
-        const val ACTION_STOP_SERVICE = "STOP"
-        const val ACTION_AUTHENTICATE = "AUTHENTICATE"
-        const val ACTION_CALL = "CALL"
-        const val ACTION_ANSWER = "ANSWER"
-        const val ACTION_REJECT = "REJECT"
 
         const val EXTRA_SIP_SERVER = "SERVER"
         const val EXTRA_SIP_USERNAME = "USERNAME"
@@ -50,6 +48,16 @@ class BridgeService : Service(), IBridgeService {
         const val EXTRA_DESTINATION = "DESTINATION"
     }
 
+    enum class Action {
+        START,
+        STOP,
+        AUTHENTICATE,
+        CALL,
+        ANSWER,
+        REJECT,
+        CONFIG
+    }
+
     lateinit var component: BridgeServiceComponent
 
     @Inject
@@ -67,6 +75,11 @@ class BridgeService : Service(), IBridgeService {
         copyIfNotExists(this, R.raw.toy_mono, "$baseDir/toymono.wav")
         copyIfNotExists(this, R.raw.lp_default, "$baseDir/linphonerc")
 
+        init()
+        startForeground(1, Notification())
+    }
+
+    private fun init() {
         component = DaggerBridgeServiceComponent.builder()
                 .appComponent(BridgeApplication.getApplication(this).component)
                 .bridgeModule(BridgeModule(this))
@@ -74,20 +87,32 @@ class BridgeService : Service(), IBridgeService {
                 .build()
 
         component.inject(this)
-
-        linphoneManager.start()
-        startForeground(1, Notification())
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         var result = super.onStartCommand(intent, flags, startId)
         intent?.let {
-            when (it.getStringExtra(EXTRA_ACTION)) {
-                ACTION_STOP_SERVICE -> {
+            val action: Action
+            try {
+                action = Action.valueOf(it.getStringExtra(EXTRA_ACTION))
+            } catch (e: Exception) {
+                when (e) {
+                    is IllegalArgumentException,
+                    is IllegalStateException -> {
+                        return result
+                    }
+                }
+                throw e
+            }
+            when (action) {
+                Action.START -> {
+                    startService()
+                }
+                Action.STOP -> {
                     Timber.d("stopping service ${Integer.toHexString(hashCode())}")
                     stopService()
                 }
-                ACTION_AUTHENTICATE -> {
+                Action.AUTHENTICATE -> {
                     authenticate(
                             it.getStringExtra(EXTRA_SIP_SERVER),
                             it.getIntExtra(EXTRA_SIP_PORT, 5060),
@@ -96,17 +121,27 @@ class BridgeService : Service(), IBridgeService {
                             it.getStringExtra(EXTRA_SIP_PROXY)
                     )
                 }
-                ACTION_CALL -> {
+                Action.CALL -> {
                     call(it.getStringExtra(EXTRA_DESTINATION))
                 }
-                ACTION_ANSWER -> {
+                Action.ANSWER -> {
                     answerCall()
                 }
-                ACTION_REJECT -> {
+                Action.REJECT -> {
                     rejectCall()
                 }
-                else -> {
-                    // do nothing
+                Action.CONFIG -> {
+                   updateConfig(SIPConfiguration().apply {
+                       echoCancellation = it.getBooleanExtra(EXTRA_AEC_ENABLED, false)
+                       echoLimiter = it.getBooleanExtra(EXTRA_EL_ENABLED, false)
+                       echoLimiterDoubleTalkDetection = it.getFloatExtra(EXTRA_EL_DOUBLETALK_THRESHOLD, 1.0f)
+                       echoLimiterMicrophoneDecrease = it.getIntExtra(EXTRA_EL_MIC_REDUCTION, 0)
+                       echoLimiterSpeakerThreshold = it.getFloatExtra(EXTRA_EL_SPEAKER_THRESHOLD, 1.0f)
+                       echoLimiterSustain = it.getIntExtra(EXTRA_EL_SUSTAIN, 0)
+                       enabledCodecs = it.getStringArrayExtra(EXTRA_LIST_CODEC_ENABLED)
+                       microphoneGain = it.getIntExtra(EXTRA_MICROPHONE_GAIN, 0)
+                       speakerGain = it.getIntExtra(EXTRA_SPEAKER_GAIN, 0)
+                   })
                 }
             }
         }
@@ -116,6 +151,10 @@ class BridgeService : Service(), IBridgeService {
     override fun onDestroy() {
         linphoneManager.destroy()
         super.onDestroy()
+    }
+
+    override fun startService() {
+        linphoneManager.start()
     }
 
     override fun authenticate(host: String?, port: Int, username: String?, password: String?, proxy: String?) {
@@ -137,7 +176,16 @@ class BridgeService : Service(), IBridgeService {
     }
 
     override fun updateConfig(configuration: SIPConfiguration?) {
+        if (configuration == null) {
+            return
+        }
+        val listenerBackup = eventDispatcher.listener
         linphoneManager.configure(configuration)
+        linphoneManager.destroy()
+        init()
+        eventDispatcher.shouldReconfigure = false
+        eventDispatcher.listener = listenerBackup
+        linphoneManager.start()
     }
 
     override fun getConfig(): SIPConfiguration {
@@ -159,7 +207,7 @@ class BridgeService : Service(), IBridgeService {
         eventDispatcher.listener = listener
     }
 
-    override fun registerSipListener(listener: ILinbridgeListener?): Boolean {
+    override fun startService(listener: ILinbridgeListener?): Boolean {
         if (listener == null) {
             throw NullPointerException("passed a null listener")
         }
@@ -169,6 +217,7 @@ class BridgeService : Service(), IBridgeService {
         }
 
         eventDispatcher.listener = listener
+        startService()
         return true
     }
 
@@ -213,4 +262,17 @@ class BridgeService : Service(), IBridgeService {
         }
 
 
+}
+
+fun SIPConfiguration.configure(core: Core) {
+    core.micGainDb = microphoneGain.toFloat()
+    core.playbackGainDb = speakerGain.toFloat()
+    core.enableEchoCancellation(echoCancellation)
+    core.enableEchoLimiter(echoLimiter)
+    core.config.setInt("sound", "el_sustain", echoLimiterSustain)
+    core.config.setString("sound", "el_type", "mic")
+    core.config.setFloat("sound", "el_thres", echoLimiterSpeakerThreshold)
+    core.config.setInt("sound", "el_force", echoLimiterMicrophoneDecrease)
+    core.config.setFloat("sound", "el_transmit_threshold", echoLimiterDoubleTalkDetection)
+    core.config.sync()
 }
