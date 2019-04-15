@@ -2,7 +2,9 @@ package de.suitepad.linbridge.manager
 
 import android.content.Context
 import de.suitepad.linbridge.api.SIPConfiguration
+import de.suitepad.linbridge.api.core.AuthenticationState
 import de.suitepad.linbridge.api.core.CallError
+import de.suitepad.linbridge.api.core.Credentials
 import de.suitepad.linbridge.configure
 import org.linphone.core.*
 import timber.log.Timber
@@ -134,6 +136,21 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
     }
 
     fun isRegistered(): Boolean = registrationState == RegistrationState.Ok
+
+    override fun getCurrentAuthenticationState(): AuthenticationState? {
+        return when (registrationState) {
+            RegistrationState.Progress -> AuthenticationState.Progress
+            RegistrationState.Ok -> AuthenticationState.Ok
+            RegistrationState.Cleared -> AuthenticationState.Cleared
+            RegistrationState.Failed -> AuthenticationState.Failed
+            else -> null
+        }
+    }
+
+    override fun getCurrentCredentials(): Credentials? {
+        // TODO implement this
+        return null
+    }
 
     //<editor-fold desc="CoreListener">
     override fun onRegistrationStateChanged(lc: Core?, cfg: ProxyConfig?, cstate: RegistrationState?, message: String?) {

@@ -217,11 +217,11 @@ class BridgeService : Service(), IBridgeService {
     }
 
     override fun getCurrentCredentials(): Credentials? {
-        return null
+        return linphoneManager.getCurrentCredentials()
     }
 
     override fun getAuthenticationState(): AuthenticationState? {
-        return null
+        return linphoneManager.getCurrentAuthenticationState()
     }
 
     override fun startService(listener: ILinbridgeListener?): Boolean {

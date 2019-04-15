@@ -1,7 +1,9 @@
 package de.suitepad.linbridge.manager
 
 import de.suitepad.linbridge.api.SIPConfiguration
+import de.suitepad.linbridge.api.core.AuthenticationState
 import de.suitepad.linbridge.api.core.CallError
+import de.suitepad.linbridge.api.core.Credentials
 
 
 interface IManager {
@@ -36,5 +38,9 @@ interface IManager {
     fun answerCall(): CallError?
 
     fun rejectCall(): CallError?
+
+    fun getCurrentAuthenticationState(): AuthenticationState?
+
+    fun getCurrentCredentials(): Credentials?
 
 }
