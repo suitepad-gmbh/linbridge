@@ -79,6 +79,7 @@ class BridgeService : Service(), IBridgeService {
 
         init()
         startForeground(1, Notification())
+        startService()
     }
 
     private fun init() {
@@ -209,7 +210,7 @@ class BridgeService : Service(), IBridgeService {
         return linphoneManager.call(destination)
     }
 
-    override fun forceRegisterSipListener(listener: ILinbridgeListener?) {
+    override fun registerSipListener(listener: ILinbridgeListener?) {
         if (listener == null)
             throw NullPointerException("passed a null listener")
 
@@ -222,20 +223,6 @@ class BridgeService : Service(), IBridgeService {
 
     override fun getAuthenticationState(): AuthenticationState? {
         return linphoneManager.getCurrentAuthenticationState()
-    }
-
-    override fun startService(listener: ILinbridgeListener?): Boolean {
-        if (listener == null) {
-            throw NullPointerException("passed a null listener")
-        }
-
-        if (eventDispatcher.listener != null) {
-            return false
-        }
-
-        eventDispatcher.listener = listener
-        startService()
-        return true
     }
 
     override fun stopService() {
