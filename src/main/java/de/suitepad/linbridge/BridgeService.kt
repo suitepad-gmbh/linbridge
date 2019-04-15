@@ -7,7 +7,9 @@ import android.content.Intent
 import android.os.*
 import de.suitepad.linbridge.api.ILinbridgeListener
 import de.suitepad.linbridge.api.SIPConfiguration
+import de.suitepad.linbridge.api.core.AuthenticationState
 import de.suitepad.linbridge.api.core.CallError
+import de.suitepad.linbridge.api.core.Credentials
 import de.suitepad.linbridge.dep.BridgeModule
 import de.suitepad.linbridge.dep.BridgeServiceComponent
 import de.suitepad.linbridge.dep.DaggerBridgeServiceComponent
@@ -114,11 +116,13 @@ class BridgeService : Service(), IBridgeService {
                 }
                 Action.AUTHENTICATE -> {
                     authenticate(
-                            it.getStringExtra(EXTRA_SIP_SERVER),
-                            it.getIntExtra(EXTRA_SIP_PORT, 5060),
-                            it.getStringExtra(EXTRA_SIP_USERNAME),
-                            it.getStringExtra(EXTRA_SIP_PASSWORD),
-                            it.getStringExtra(EXTRA_SIP_PROXY)
+                            Credentials(
+                                    it.getStringExtra(EXTRA_SIP_SERVER),
+                                    it.getIntExtra(EXTRA_SIP_PORT, 5060),
+                                    it.getStringExtra(EXTRA_SIP_USERNAME),
+                                    it.getStringExtra(EXTRA_SIP_PASSWORD),
+                                    it.getStringExtra(EXTRA_SIP_PROXY)
+                            )
                     )
                 }
                 Action.CALL -> {
@@ -131,17 +135,17 @@ class BridgeService : Service(), IBridgeService {
                     rejectCall()
                 }
                 Action.CONFIG -> {
-                   updateConfig(SIPConfiguration().apply {
-                       echoCancellation = it.getBooleanExtra(EXTRA_AEC_ENABLED, false)
-                       echoLimiter = it.getBooleanExtra(EXTRA_EL_ENABLED, false)
-                       echoLimiterDoubleTalkDetection = it.getFloatExtra(EXTRA_EL_DOUBLETALK_THRESHOLD, 1.0f)
-                       echoLimiterMicrophoneDecrease = it.getIntExtra(EXTRA_EL_MIC_REDUCTION, 0)
-                       echoLimiterSpeakerThreshold = it.getFloatExtra(EXTRA_EL_SPEAKER_THRESHOLD, 1.0f)
-                       echoLimiterSustain = it.getIntExtra(EXTRA_EL_SUSTAIN, 0)
-                       enabledCodecs = it.getStringArrayExtra(EXTRA_LIST_CODEC_ENABLED)
-                       microphoneGain = it.getIntExtra(EXTRA_MICROPHONE_GAIN, 0)
-                       speakerGain = it.getIntExtra(EXTRA_SPEAKER_GAIN, 0)
-                   })
+                    updateConfig(SIPConfiguration().apply {
+                        echoCancellation = it.getBooleanExtra(EXTRA_AEC_ENABLED, false)
+                        echoLimiter = it.getBooleanExtra(EXTRA_EL_ENABLED, false)
+                        echoLimiterDoubleTalkDetection = it.getFloatExtra(EXTRA_EL_DOUBLETALK_THRESHOLD, 1.0f)
+                        echoLimiterMicrophoneDecrease = it.getIntExtra(EXTRA_EL_MIC_REDUCTION, 0)
+                        echoLimiterSpeakerThreshold = it.getFloatExtra(EXTRA_EL_SPEAKER_THRESHOLD, 1.0f)
+                        echoLimiterSustain = it.getIntExtra(EXTRA_EL_SUSTAIN, 0)
+                        enabledCodecs = it.getStringArrayExtra(EXTRA_LIST_CODEC_ENABLED)
+                        microphoneGain = it.getIntExtra(EXTRA_MICROPHONE_GAIN, 0)
+                        speakerGain = it.getIntExtra(EXTRA_SPEAKER_GAIN, 0)
+                    })
                 }
             }
         }
@@ -157,22 +161,27 @@ class BridgeService : Service(), IBridgeService {
         linphoneManager.start()
     }
 
-    override fun authenticate(host: String?, port: Int, username: String?, password: String?, proxy: String?) {
-        if (host == null) {
+    override fun authenticate(credentials: Credentials?) {
+        if (credentials == null) {
+            throw NullPointerException("credentials are null")
+        }
+
+        if (credentials.host == null) {
             throw NullPointerException("host is null")
         }
 
-        val servicePort = if (port == 0) 5060 else port
+        val servicePort = if (credentials.port == 0) 5060 else credentials.port
 
-        if (username == null) {
+        if (credentials.username == null) {
             throw NullPointerException("username is null")
         }
 
-        if (password == null) {
+        if (credentials.password == null) {
             throw NullPointerException("password is null")
         }
 
-        linphoneManager.authenticate(host, servicePort, username, password, proxy)
+        linphoneManager.authenticate(credentials.host, servicePort, credentials.username,
+                credentials.password, credentials.proxy)
     }
 
     override fun updateConfig(configuration: SIPConfiguration?) {
@@ -205,6 +214,14 @@ class BridgeService : Service(), IBridgeService {
             throw NullPointerException("passed a null listener")
 
         eventDispatcher.listener = listener
+    }
+
+    override fun getCurrentCredentials(): Credentials? {
+        return null
+    }
+
+    override fun getAuthenticationState(): AuthenticationState? {
+        return null
     }
 
     override fun startService(listener: ILinbridgeListener?): Boolean {
