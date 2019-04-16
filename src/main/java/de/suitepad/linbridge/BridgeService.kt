@@ -46,6 +46,7 @@ class BridgeService : Service(), IBridgeService {
         const val EXTRA_EL_SUSTAIN = "EL_SUSTAIN"
         const val EXTRA_EL_DOUBLETALK_THRESHOLD = "EL_DOUBLETALK_THRESHOLD"
         const val EXTRA_LIST_CODEC_ENABLED = "CODECS"
+        const val EXTRA_DTMF_CHAR = "NUMBER"
 
         const val EXTRA_DESTINATION = "DESTINATION"
     }
@@ -57,7 +58,9 @@ class BridgeService : Service(), IBridgeService {
         CALL,
         ANSWER,
         REJECT,
-        CONFIG
+        CONFIG,
+        DTMFPLAY,
+        DTMFSTOP
     }
 
     lateinit var component: BridgeServiceComponent
@@ -147,6 +150,12 @@ class BridgeService : Service(), IBridgeService {
                         microphoneGain = it.getIntExtra(EXTRA_MICROPHONE_GAIN, 0)
                         speakerGain = it.getIntExtra(EXTRA_SPEAKER_GAIN, 0)
                     })
+                }
+                Action.DTMFPLAY -> {
+                    sendDtmf(it.getCharExtra(EXTRA_DTMF_CHAR, '0'))
+                }
+                Action.DTMFSTOP -> {
+                    stopDtmf()
                 }
             }
         }
@@ -240,6 +249,10 @@ class BridgeService : Service(), IBridgeService {
 
     override fun sendDtmf(number: Char) {
         linphoneManager.sendDtmf(number)
+    }
+
+    override fun stopDtmf() {
+        linphoneManager.stopDtmf()
     }
 
     fun copyIfNotExists(context: Context, resource: Int, target: String) {

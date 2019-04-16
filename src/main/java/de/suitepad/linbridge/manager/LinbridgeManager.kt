@@ -155,7 +155,13 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
     }
 
     override fun sendDtmf(number: Char) {
+        core.stopDtmf()
+        core.playDtmf(number, -1)
         core.currentCall?.sendDtmf(number)
+    }
+
+    override fun stopDtmf() {
+        core.stopDtmf()
     }
 
     //<editor-fold desc="CoreListener">

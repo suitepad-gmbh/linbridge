@@ -45,4 +45,6 @@ interface IManager {
 
     fun sendDtmf(number: Char)
 
+    fun stopDtmf()
+
 }
