@@ -39,6 +39,7 @@ class BridgeEventDispatcher : OptionalCoreListener, IBridgeEventDispatcher {
 
     override fun onRegistrationStateChanged(lc: Core?, cfg: ProxyConfig?, cstate: RegistrationState?, message: String?) {
         Timber.i("registration state changed [$cstate] $message")
+        Timber.i("onRegistrationStateChanged: $listener")
         if (cstate != null) {
             listener?.authenticationStateChanged(AuthenticationState.valueOf(cstate.name))
         }

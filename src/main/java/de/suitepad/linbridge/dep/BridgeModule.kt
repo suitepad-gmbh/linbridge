@@ -9,6 +9,7 @@ import de.suitepad.linbridge.BridgeService
 class BridgeModule(val context: BridgeService) {
 
     @Provides
+    @BridgeServiceComponent.BridgeServiceScope
     fun context(): Context = context
 
 }

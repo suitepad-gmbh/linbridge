@@ -55,7 +55,7 @@ class LinbridgeEventLogger(val loggerLevel: Int = Log.DEBUG) : CoreListener {
     }
 
     override fun onRegistrationStateChanged(lc: Core?, cfg: ProxyConfig?, cstate: RegistrationState?, message: String?) {
-        log("onRegistrationStateChanged: ")
+        log("onRegistrationStateChanged: $cstate")
     }
 
     override fun onNotifyPresenceReceived(lc: Core?, lf: Friend?) {

@@ -215,6 +215,7 @@ class BridgeService : Service(), IBridgeService {
             throw NullPointerException("passed a null listener")
 
         eventDispatcher.listener = listener
+        Timber.d("registerSipListener: $listener")
     }
 
     override fun getCurrentCredentials(): Credentials? {

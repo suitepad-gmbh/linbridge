@@ -8,7 +8,7 @@ import de.suitepad.linbridge.manager.IManager
 import javax.inject.Scope
 
 @Component(dependencies = [AppComponent::class], modules = [BridgeModule::class, ManagerModule::class])
-@BridgeServiceComponent.LinphoneBridgeServiceScope
+@BridgeServiceComponent.BridgeServiceScope
 interface BridgeServiceComponent {
 
     fun provideLinphoneManager(): IManager
@@ -20,6 +20,6 @@ interface BridgeServiceComponent {
     fun inject(service: BridgeService)
 
     @Scope
-    annotation class LinphoneBridgeServiceScope
+    annotation class BridgeServiceScope
 
 }
