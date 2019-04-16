@@ -28,39 +28,7 @@ class BridgeService : Service(), IBridgeService {
 
     companion object {
         const val SERVICE_NAME = "de.suitepad.linbridge.BridgeService"
-
         const val EXTRA_ACTION = "ACTION"
-
-        const val EXTRA_SIP_SERVER = "SERVER"
-        const val EXTRA_SIP_USERNAME = "USERNAME"
-        const val EXTRA_SIP_PASSWORD = "PASSWORD"
-        const val EXTRA_SIP_PORT = "PORT"
-        const val EXTRA_SIP_PROXY = "PROXY"
-
-        const val EXTRA_MICROPHONE_GAIN = "MICROPHONE_GAIN"
-        const val EXTRA_SPEAKER_GAIN = "SPEAKER_GAIN"
-        const val EXTRA_AEC_ENABLED = "AEC_ENABLED"
-        const val EXTRA_EL_ENABLED = "EL_ENABLED"
-        const val EXTRA_EL_MIC_REDUCTION = "EL_MICROPHONE_REDUCTION"
-        const val EXTRA_EL_SPEAKER_THRESHOLD = "EL_SPEAKER_THRESHOLD"
-        const val EXTRA_EL_SUSTAIN = "EL_SUSTAIN"
-        const val EXTRA_EL_DOUBLETALK_THRESHOLD = "EL_DOUBLETALK_THRESHOLD"
-        const val EXTRA_LIST_CODEC_ENABLED = "CODECS"
-        const val EXTRA_DTMF_CHAR = "NUMBER"
-
-        const val EXTRA_DESTINATION = "DESTINATION"
-    }
-
-    enum class Action {
-        START,
-        STOP,
-        AUTHENTICATE,
-        CALL,
-        ANSWER,
-        REJECT,
-        CONFIG,
-        DTMFPLAY,
-        DTMFSTOP
     }
 
     lateinit var component: BridgeServiceComponent
@@ -98,9 +66,8 @@ class BridgeService : Service(), IBridgeService {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         var result = super.onStartCommand(intent, flags, startId)
         intent?.let {
-            val action: Action
             try {
-                action = Action.valueOf(it.getStringExtra(EXTRA_ACTION))
+                IntentAction.valueOf(it.getStringExtra(EXTRA_ACTION)).routine.invoke(this, it.extras)
             } catch (e: Exception) {
                 when (e) {
                     is IllegalArgumentException,
@@ -109,54 +76,6 @@ class BridgeService : Service(), IBridgeService {
                     }
                 }
                 throw e
-            }
-            when (action) {
-                Action.START -> {
-                    startService()
-                }
-                Action.STOP -> {
-                    Timber.d("stopping service ${Integer.toHexString(hashCode())}")
-                    stopService()
-                }
-                Action.AUTHENTICATE -> {
-                    authenticate(
-                            Credentials(
-                                    it.getStringExtra(EXTRA_SIP_SERVER),
-                                    it.getIntExtra(EXTRA_SIP_PORT, 5060),
-                                    it.getStringExtra(EXTRA_SIP_USERNAME),
-                                    it.getStringExtra(EXTRA_SIP_PASSWORD),
-                                    it.getStringExtra(EXTRA_SIP_PROXY)
-                            )
-                    )
-                }
-                Action.CALL -> {
-                    call(it.getStringExtra(EXTRA_DESTINATION))
-                }
-                Action.ANSWER -> {
-                    answerCall()
-                }
-                Action.REJECT -> {
-                    rejectCall()
-                }
-                Action.CONFIG -> {
-                    updateConfig(SIPConfiguration().apply {
-                        echoCancellation = it.getBooleanExtra(EXTRA_AEC_ENABLED, false)
-                        echoLimiter = it.getBooleanExtra(EXTRA_EL_ENABLED, false)
-                        echoLimiterDoubleTalkDetection = it.getFloatExtra(EXTRA_EL_DOUBLETALK_THRESHOLD, 1.0f)
-                        echoLimiterMicrophoneDecrease = it.getIntExtra(EXTRA_EL_MIC_REDUCTION, 0)
-                        echoLimiterSpeakerThreshold = it.getFloatExtra(EXTRA_EL_SPEAKER_THRESHOLD, 1.0f)
-                        echoLimiterSustain = it.getIntExtra(EXTRA_EL_SUSTAIN, 0)
-                        enabledCodecs = it.getStringArrayExtra(EXTRA_LIST_CODEC_ENABLED)
-                        microphoneGain = it.getIntExtra(EXTRA_MICROPHONE_GAIN, 0)
-                        speakerGain = it.getIntExtra(EXTRA_SPEAKER_GAIN, 0)
-                    })
-                }
-                Action.DTMFPLAY -> {
-                    sendDtmf(it.getCharExtra(EXTRA_DTMF_CHAR, '0'))
-                }
-                Action.DTMFSTOP -> {
-                    stopDtmf()
-                }
             }
         }
         return result
