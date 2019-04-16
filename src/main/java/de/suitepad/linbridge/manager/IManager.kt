@@ -43,4 +43,6 @@ interface IManager {
 
     fun getCurrentCredentials(): Credentials?
 
+    fun sendDtmf(number: Char)
+
 }

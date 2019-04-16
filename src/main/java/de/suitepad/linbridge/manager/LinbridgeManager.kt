@@ -27,6 +27,8 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
         core.ringback = "$baseDir/ringback.wav"
         core.ring = "$baseDir/toymono.wav"
 
+        core.clearAllAuthInfo()
+        core.clearProxyConfig()
         core.disableChat(Reason.NotImplemented)
         core.enableVideoDisplay(false)
         core.enableVideoCapture(false)
@@ -150,6 +152,10 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
     override fun getCurrentCredentials(): Credentials? {
         // TODO implement this
         return null
+    }
+
+    override fun sendDtmf(number: Char) {
+        core.currentCall?.sendDtmf(number)
     }
 
     //<editor-fold desc="CoreListener">

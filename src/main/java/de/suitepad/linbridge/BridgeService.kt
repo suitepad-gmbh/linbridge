@@ -238,6 +238,10 @@ class BridgeService : Service(), IBridgeService {
         return linphoneManager.rejectCall()
     }
 
+    override fun sendDtmf(number: Char) {
+        linphoneManager.sendDtmf(number)
+    }
+
     fun copyIfNotExists(context: Context, resource: Int, target: String) {
         val outputFile = File(target)
         if (!outputFile.exists()) {
