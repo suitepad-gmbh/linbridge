@@ -21,7 +21,10 @@ class BridgeEventDispatcher : OptionalCoreListener, IBridgeEventDispatcher {
     override fun onCallStateChanged(lc: Core?, call: Call?, cstate: Call.State?, message: String?) {
         Timber.i("call state [$cstate]")
         if (cstate != null && call != null) {
-            listener?.callStateChanged(CallState.valueOf(cstate.name), call.remoteAddress.displayName)
+            val callState = CallState.valueOf(cstate.name)
+            callState.number = call.remoteAddress.username
+            callState.contactName = call.remoteAddress.displayName
+            listener?.callStateChanged(callState)
         }
     }
 
