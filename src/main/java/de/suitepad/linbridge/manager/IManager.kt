@@ -47,4 +47,6 @@ interface IManager {
 
     fun stopDtmf()
 
+    fun mute(muted: Boolean)
+
 }

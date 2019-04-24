@@ -174,6 +174,10 @@ class BridgeService : Service(), IBridgeService {
         linphoneManager.stopDtmf()
     }
 
+    override fun mute(muted: Boolean) {
+        linphoneManager.mute(muted)
+    }
+
     fun copyIfNotExists(context: Context, resource: Int, target: String) {
         val outputFile = File(target)
         if (!outputFile.exists()) {

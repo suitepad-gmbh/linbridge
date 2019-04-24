@@ -61,6 +61,8 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
     }
 
     override fun authenticate(host: String, port: Int, username: String, password: String, proxy: String?) {
+        core.clearProxyConfig()
+        core.clearAllAuthInfo()
 
         val sipAddress = "sip:$username@$host:$port"
         val address: Address = core.createAddress(sipAddress)
@@ -162,6 +164,10 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
 
     override fun stopDtmf() {
         core.stopDtmf()
+    }
+
+    override fun mute(muted: Boolean) {
+        core.enableMic(!muted)
     }
 
     //<editor-fold desc="CoreListener">
