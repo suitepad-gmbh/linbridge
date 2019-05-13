@@ -11,7 +11,6 @@ import timber.log.Timber
 import java.util.*
 
 class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener, IManager {
-
     var registrationState: RegistrationState? = null
 
     val keepAliveTask = object : TimerTask() {
@@ -19,8 +18,8 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
             core.iterate()
         }
     }
-    var keepAliveTimer: Timer? = null
 
+    var keepAliveTimer: Timer? = null
     init {
         val baseDir = context.filesDir.absolutePath
         core.rootCa = "$baseDir/rootca.pem"
@@ -168,6 +167,10 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
 
     override fun mute(muted: Boolean) {
         core.enableMic(!muted)
+    }
+
+    override fun getCurrentCallDuration(): Int {
+        return core.currentCall.duration
     }
 
     //<editor-fold desc="CoreListener">

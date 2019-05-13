@@ -49,4 +49,6 @@ interface IManager {
 
     fun mute(muted: Boolean)
 
+    fun getCurrentCallDuration(): Int
+
 }

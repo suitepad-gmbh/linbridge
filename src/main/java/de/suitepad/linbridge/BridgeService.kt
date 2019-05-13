@@ -178,6 +178,10 @@ class BridgeService : Service(), IBridgeService {
         linphoneManager.mute(muted)
     }
 
+    override fun getCurrentCallDuration(): Int {
+        return linphoneManager.getCurrentCallDuration()
+    }
+
     fun copyIfNotExists(context: Context, resource: Int, target: String) {
         val outputFile = File(target)
         if (!outputFile.exists()) {
