@@ -72,7 +72,7 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
 
         val proxyConfig = core.createProxyConfig()
         var sipProxy = "sip:"
-        if (proxy == null) {
+        if (proxy.isNullOrBlank()) {
             sipProxy += host
         } else {
             if (!proxy.startsWith("sip:") && !proxy.startsWith("<sip:") &&
