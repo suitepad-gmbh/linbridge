@@ -82,9 +82,9 @@ dependencies {
 
 // Dagger dependencies
 dependencies {
-    implementation 'com.google.dagger:dagger-android:2.21'
-    annotationProcessor 'com.google.dagger:dagger-compiler:2.15'
-    kapt 'com.google.dagger:dagger-compiler:2.15'
+    implementation 'com.google.dagger:dagger-android:2.22.1'
+    annotationProcessor 'com.google.dagger:dagger-compiler:2.22.1'
+    kapt 'com.google.dagger:dagger-compiler:2.22.1'
 }
 
 // Test dependencies
