@@ -127,7 +127,7 @@ class BridgeService : Service(), IBridgeService {
     }
 
     override fun getConfig(): SIPConfiguration {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return linphoneManager.getCurrentConfiguration()
     }
 
     override fun call(destination: String?): CallError? {
@@ -211,17 +211,4 @@ class BridgeService : Service(), IBridgeService {
         }
 
 
-}
-
-fun SIPConfiguration.configure(core: Core) {
-    core.micGainDb = microphoneGain.toFloat()
-    core.playbackGainDb = speakerGain.toFloat()
-    core.enableEchoCancellation(echoCancellation)
-    core.enableEchoLimiter(echoLimiter)
-    core.config.setInt("sound", "el_sustain", echoLimiterSustain)
-    core.config.setString("sound", "el_type", "mic")
-    core.config.setFloat("sound", "el_thres", echoLimiterSpeakerThreshold)
-    core.config.setInt("sound", "el_force", echoLimiterMicrophoneDecrease)
-    core.config.setFloat("sound", "el_transmit_threshold", echoLimiterDoubleTalkDetection)
-    core.config.sync()
 }

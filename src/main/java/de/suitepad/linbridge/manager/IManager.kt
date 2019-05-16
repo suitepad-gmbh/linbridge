@@ -51,4 +51,6 @@ interface IManager {
 
     fun getCurrentCallDuration(): Int
 
+    fun getCurrentConfiguration(): SIPConfiguration
+
 }

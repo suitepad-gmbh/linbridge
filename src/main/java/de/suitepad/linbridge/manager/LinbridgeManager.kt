@@ -5,7 +5,6 @@ import de.suitepad.linbridge.api.SIPConfiguration
 import de.suitepad.linbridge.api.core.AuthenticationState
 import de.suitepad.linbridge.api.core.CallError
 import de.suitepad.linbridge.api.core.Credentials
-import de.suitepad.linbridge.configure
 import org.linphone.core.*
 import timber.log.Timber
 import java.util.*
@@ -20,6 +19,7 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
     }
 
     var keepAliveTimer: Timer? = null
+
     init {
         val baseDir = context.filesDir.absolutePath
         core.rootCa = "$baseDir/rootca.pem"
@@ -56,7 +56,7 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
     }
 
     override fun configure(settings: SIPConfiguration) {
-        settings.configure(core)
+        core.configure(settings)
     }
 
     override fun authenticate(host: String, port: Int, username: String, password: String, proxy: String?) {
@@ -150,6 +150,10 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
         }
     }
 
+    override fun getCurrentConfiguration(): SIPConfiguration {
+        return core.getConfiguration()
+    }
+
     override fun getCurrentCredentials(): Credentials? {
         // TODO implement this
         return null
@@ -179,4 +183,30 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
     }
     //</editor-fold>
 
+}
+
+fun Core.configure(settings: SIPConfiguration) {
+    micGainDb = settings.microphoneGain.toFloat()
+    playbackGainDb = settings.speakerGain.toFloat()
+    enableEchoCancellation(settings.echoCancellation)
+    enableEchoLimiter(settings.echoLimiter)
+    config.setInt("sound", "el_sustain", settings.echoLimiterSustain)
+    config.setString("sound", "el_type", "mic")
+    config.setFloat("sound", "el_thres", settings.echoLimiterSpeakerThreshold)
+    config.setInt("sound", "el_force", settings.echoLimiterMicrophoneDecrease)
+    config.setFloat("sound", "el_transmit_threshold", settings.echoLimiterDoubleTalkDetection)
+    config.sync()
+}
+
+fun Core.getConfiguration(): SIPConfiguration {
+    return SIPConfiguration().also {
+        it.microphoneGain = micGainDb.toInt()
+        it.speakerGain = playbackGainDb.toInt()
+        it.echoCancellation = echoCancellationEnabled()
+        it.echoLimiter = echoLimiterEnabled()
+        it.echoLimiterSustain = config.getInt("sound", "el_sustain", 0)
+        it.echoLimiterSpeakerThreshold = config.getFloat("sound", "el_thres", 0f)
+        it.echoLimiterMicrophoneDecrease = config.getInt("sound", "el_force", 0)
+        it.echoLimiterDoubleTalkDetection = config.getFloat("sound", "el_transmit_threshold", 0f)
+    }
 }
