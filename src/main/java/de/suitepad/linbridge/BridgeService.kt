@@ -114,16 +114,17 @@ class BridgeService : Service(), IBridgeService {
     }
 
     override fun updateConfig(configuration: SIPConfiguration?) {
+        Timber.d("updating config")
         if (configuration == null) {
             return
         }
-        val listenerBackup = eventDispatcher.listener
+//        val listenerBackup = eventDispatcher.listener
         linphoneManager.configure(configuration)
-        linphoneManager.destroy()
-        init()
-        eventDispatcher.shouldReconfigure = false
-        eventDispatcher.listener = listenerBackup
-        linphoneManager.start()
+//        linphoneManager.destroy()
+//        init()
+//        eventDispatcher.shouldReconfigure = false
+//        eventDispatcher.listener = listenerBackup
+//        linphoneManager.start()
     }
 
     override fun getConfig(): SIPConfiguration {

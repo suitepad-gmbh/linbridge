@@ -2,6 +2,7 @@ package de.suitepad.linbridge.manager
 
 import android.content.Context
 import de.suitepad.linbridge.api.SIPConfiguration
+import de.suitepad.linbridge.api.core.AudioCodec
 import de.suitepad.linbridge.api.core.AuthenticationState
 import de.suitepad.linbridge.api.core.CallError
 import de.suitepad.linbridge.api.core.Credentials
@@ -195,7 +196,24 @@ fun Core.configure(settings: SIPConfiguration) {
     config.setFloat("sound", "el_thres", settings.echoLimiterSpeakerThreshold)
     config.setInt("sound", "el_force", settings.echoLimiterMicrophoneDecrease)
     config.setFloat("sound", "el_transmit_threshold", settings.echoLimiterDoubleTalkDetection)
+    config.setBool("misc", "add_missing_audio_codecs", settings.enabledCodecs.isEmpty())
+    enableCodecs(settings.enabledCodecs)
     config.sync()
+    Timber.v(config.dump())
+}
+
+fun Core.enableCodecs(types: Array<AudioCodec>?) {
+    audioPayloadTypes.forEach { payloadType ->
+        val audioCodec = AudioCodec.getAudioCodecByMimeAndRate(payloadType.mimeType, payloadType.clockRate)
+        payloadType.enable((types.isNullOrEmpty() && audioCodec != null) || //  if not specifying codecs to open and the codec is supported by bell
+                types?.contains(audioCodec) ?: false) // if codec is in the enabled codecs list
+    }
+}
+
+fun Core.getEnabledCodecs(): Array<AudioCodec>? {
+    return audioPayloadTypes.filter { it.enabled() }.mapNotNull {
+        AudioCodec.getAudioCodecByMimeAndRate(it.mimeType, it.clockRate)
+    }.toTypedArray()
 }
 
 fun Core.getConfiguration(): SIPConfiguration {
@@ -208,5 +226,6 @@ fun Core.getConfiguration(): SIPConfiguration {
         it.echoLimiterSpeakerThreshold = config.getFloat("sound", "el_thres", 0f)
         it.echoLimiterMicrophoneDecrease = config.getInt("sound", "el_force", 0)
         it.echoLimiterDoubleTalkDetection = config.getFloat("sound", "el_transmit_threshold", 0f)
+        it.enabledCodecs = getEnabledCodecs()
     }
 }

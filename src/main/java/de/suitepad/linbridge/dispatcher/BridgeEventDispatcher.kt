@@ -3,8 +3,8 @@ package de.suitepad.linbridge.dispatcher
 import de.suitepad.linbridge.api.ILinbridgeListener
 import de.suitepad.linbridge.api.core.AuthenticationState
 import de.suitepad.linbridge.api.core.CallState
-import de.suitepad.linbridge.configure
 import de.suitepad.linbridge.manager.OptionalCoreListener
+import de.suitepad.linbridge.manager.configure
 import org.linphone.core.*
 import timber.log.Timber
 
@@ -76,7 +76,9 @@ class BridgeEventDispatcher : OptionalCoreListener, IBridgeEventDispatcher {
         when (gstate) {
             GlobalState.Configuring -> {
                 if (shouldReconfigure && lc != null) {
-                    listener?.configuration?.configure(lc)
+                    listener?.configuration?.let {
+                        lc.configure(it)
+                    }
                 }
             }
             else -> {

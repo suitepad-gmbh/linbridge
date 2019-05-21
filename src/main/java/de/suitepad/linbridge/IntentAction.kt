@@ -1,6 +1,7 @@
 package de.suitepad.linbridge
 
 import android.os.Bundle
+import de.suitepad.linbridge.api.core.AudioCodec
 
 const val EXTRA_SIP_SERVER = "SERVER"
 const val EXTRA_SIP_USERNAME = "USERNAME"
@@ -55,7 +56,7 @@ enum class IntentAction(val routine: (bridge: IBridgeService, bundle: Bundle?) -
             echoLimiterMicrophoneDecrease = bundle?.getInt(EXTRA_EL_MIC_REDUCTION, 0) ?: 0
             echoLimiterSpeakerThreshold = bundle?.getFloat(EXTRA_EL_SPEAKER_THRESHOLD, 1.0f) ?: 1.0f
             echoLimiterSustain = bundle?.getInt(EXTRA_EL_SUSTAIN, 0) ?: 0
-            enabledCodecs = bundle?.getStringArray(EXTRA_LIST_CODEC_ENABLED)
+            enabledCodecs = bundle?.getStringArray(EXTRA_LIST_CODEC_ENABLED)?.map { AudioCodec.valueOf(it) }?.toTypedArray()
             microphoneGain = bundle?.getInt(EXTRA_MICROPHONE_GAIN, 0) ?: 0
             speakerGain = bundle?.getInt(EXTRA_SPEAKER_GAIN, 0) ?: 0
         })
