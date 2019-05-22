@@ -2,16 +2,15 @@ package de.suitepad.linbridge.manager
 
 import android.content.Context
 import de.suitepad.linbridge.api.SIPConfiguration
-import de.suitepad.linbridge.api.core.AudioCodec
-import de.suitepad.linbridge.api.core.AuthenticationState
-import de.suitepad.linbridge.api.core.CallError
-import de.suitepad.linbridge.api.core.Credentials
+import de.suitepad.linbridge.api.core.*
 import org.linphone.core.*
 import timber.log.Timber
 import java.util.*
 
 class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener, IManager {
+
     var registrationState: RegistrationState? = null
+    private var callEndReason: CallEndReason = CallEndReason.None
 
     val keepAliveTask = object : TimerTask() {
         override fun run() {
@@ -156,8 +155,22 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
     }
 
     override fun getCurrentCredentials(): Credentials? {
-        // TODO implement this
-        return null
+        if (core.authInfoList.isEmpty()) {
+            return null
+        }
+        val info = core.authInfoList[0]
+        val proxy = core.defaultProxyConfig
+        return Credentials(
+                info.domain.substringBefore(':'),
+                info.domain.substringAfter(':').toIntOrNull() ?: 5060,
+                info.username,
+                info.password,
+                proxy?.serverAddr
+        )
+    }
+
+    override fun getCallEndReason(): CallEndReason {
+        return callEndReason
     }
 
     override fun sendDtmf(number: Char) {
@@ -182,6 +195,12 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
     override fun onRegistrationStateChanged(lc: Core?, cfg: ProxyConfig?, cstate: RegistrationState?, message: String?) {
         registrationState = cstate
     }
+
+    override fun onCallStateChanged(lc: Core?, call: Call?, cstate: Call.State?, message: String?) {
+        super.onCallStateChanged(lc, call, cstate, message)
+        callEndReason = call?.reason?.toString()?.let { CallEndReason.valueOf(it) } ?: CallEndReason.None
+    }
+
     //</editor-fold>
 
 }

@@ -8,6 +8,7 @@ import android.os.*
 import de.suitepad.linbridge.api.ILinbridgeListener
 import de.suitepad.linbridge.api.SIPConfiguration
 import de.suitepad.linbridge.api.core.AuthenticationState
+import de.suitepad.linbridge.api.core.CallEndReason
 import de.suitepad.linbridge.api.core.CallError
 import de.suitepad.linbridge.api.core.Credentials
 import de.suitepad.linbridge.dep.BridgeModule
@@ -181,6 +182,10 @@ class BridgeService : Service(), IBridgeService {
 
     override fun getCurrentCallDuration(): Int {
         return linphoneManager.getCurrentCallDuration()
+    }
+
+    override fun getCallEndReason(): CallEndReason {
+        return linphoneManager.getCallEndReason()
     }
 
     fun copyIfNotExists(context: Context, resource: Int, target: String) {

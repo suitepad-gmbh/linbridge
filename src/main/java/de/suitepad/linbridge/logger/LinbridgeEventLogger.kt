@@ -23,7 +23,7 @@ class LinbridgeEventLogger(val loggerLevel: Int = Log.DEBUG) : CoreListener {
     }
 
     override fun onCallStateChanged(lc: Core?, call: Call?, cstate: Call.State?, message: String?) {
-        log("onCallStateChanged: $cstate")
+        log("onCallStateChanged: $cstate ${call?.reason}")
     }
 
     override fun onAuthenticationRequested(lc: Core?, authInfo: AuthInfo?, method: AuthMethod?) {

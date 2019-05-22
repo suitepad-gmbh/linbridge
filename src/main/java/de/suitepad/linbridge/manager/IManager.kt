@@ -2,6 +2,7 @@ package de.suitepad.linbridge.manager
 
 import de.suitepad.linbridge.api.SIPConfiguration
 import de.suitepad.linbridge.api.core.AuthenticationState
+import de.suitepad.linbridge.api.core.CallEndReason
 import de.suitepad.linbridge.api.core.CallError
 import de.suitepad.linbridge.api.core.Credentials
 
@@ -52,5 +53,7 @@ interface IManager {
     fun getCurrentCallDuration(): Int
 
     fun getCurrentConfiguration(): SIPConfiguration
+
+    fun getCallEndReason(): CallEndReason
 
 }
