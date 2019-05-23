@@ -1,6 +1,6 @@
 package de.suitepad.linbridge.manager
 
-import de.suitepad.linbridge.api.SIPConfiguration
+import de.suitepad.linbridge.api.AudioConfiguration
 import de.suitepad.linbridge.api.core.AuthenticationState
 import de.suitepad.linbridge.api.core.CallEndReason
 import de.suitepad.linbridge.api.core.CallError
@@ -22,7 +22,7 @@ interface IManager {
     /**
      * configures the SIP client using a [SIPConfiguration], pass null to reset to default configuration
      */
-    fun configure(settings: SIPConfiguration)
+    fun configure(settings: AudioConfiguration)
 
     /**
      * authenticates and connects to the SIP server
@@ -52,7 +52,7 @@ interface IManager {
 
     fun getCurrentCallDuration(): Int
 
-    fun getCurrentConfiguration(): SIPConfiguration
+    fun getCurrentConfiguration(): AudioConfiguration
 
     fun getCallEndReason(): CallEndReason
 

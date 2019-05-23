@@ -49,7 +49,7 @@ enum class IntentAction(val routine: (bridge: IBridgeService, bundle: Bundle?) -
         bridge.rejectCall()
     }),
     CONFIG({ bridge, bundle ->
-        bridge.updateConfig(de.suitepad.linbridge.api.SIPConfiguration().apply {
+        bridge.updateConfig(de.suitepad.linbridge.api.AudioConfiguration().apply {
             echoCancellation = bundle?.getBoolean(EXTRA_AEC_ENABLED, false) ?: false
             echoLimiter = bundle?.getBoolean(EXTRA_EL_ENABLED, false) ?: false
             echoLimiterDoubleTalkDetection = bundle?.getFloat(EXTRA_EL_DOUBLETALK_THRESHOLD, 1.0f) ?: 1.0f

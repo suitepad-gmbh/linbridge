@@ -6,7 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.*
 import de.suitepad.linbridge.api.ILinbridgeListener
-import de.suitepad.linbridge.api.SIPConfiguration
+import de.suitepad.linbridge.api.AudioConfiguration
 import de.suitepad.linbridge.api.core.AuthenticationState
 import de.suitepad.linbridge.api.core.CallEndReason
 import de.suitepad.linbridge.api.core.CallError
@@ -114,7 +114,7 @@ class BridgeService : Service(), IBridgeService {
                 credentials.password, credentials.proxy)
     }
 
-    override fun updateConfig(configuration: SIPConfiguration?) {
+    override fun updateConfig(configuration: AudioConfiguration?) {
         Timber.d("updating config")
         if (configuration == null) {
             return
@@ -128,7 +128,7 @@ class BridgeService : Service(), IBridgeService {
 //        linphoneManager.start()
     }
 
-    override fun getConfig(): SIPConfiguration {
+    override fun getConfig(): AudioConfiguration {
         return linphoneManager.getCurrentConfiguration()
     }
 

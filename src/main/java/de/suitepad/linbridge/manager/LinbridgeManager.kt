@@ -1,7 +1,7 @@
 package de.suitepad.linbridge.manager
 
 import android.content.Context
-import de.suitepad.linbridge.api.SIPConfiguration
+import de.suitepad.linbridge.api.AudioConfiguration
 import de.suitepad.linbridge.api.core.*
 import org.linphone.core.*
 import timber.log.Timber
@@ -55,7 +55,7 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
         keepAliveTimer?.cancel()
     }
 
-    override fun configure(settings: SIPConfiguration) {
+    override fun configure(settings: AudioConfiguration) {
         core.configure(settings)
     }
 
@@ -150,7 +150,7 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
         }
     }
 
-    override fun getCurrentConfiguration(): SIPConfiguration {
+    override fun getCurrentConfiguration(): AudioConfiguration {
         return core.getConfiguration()
     }
 
@@ -205,7 +205,7 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
 
 }
 
-fun Core.configure(settings: SIPConfiguration) {
+fun Core.configure(settings: AudioConfiguration) {
     micGainDb = settings.microphoneGain.toFloat()
     playbackGainDb = settings.speakerGain.toFloat()
     enableEchoCancellation(settings.echoCancellation)
@@ -235,8 +235,8 @@ fun Core.getEnabledCodecs(): Array<AudioCodec>? {
     }.toTypedArray()
 }
 
-fun Core.getConfiguration(): SIPConfiguration {
-    return SIPConfiguration().also {
+fun Core.getConfiguration(): AudioConfiguration {
+    return AudioConfiguration().also {
         it.microphoneGain = micGainDb.toInt()
         it.speakerGain = playbackGainDb.toInt()
         it.echoCancellation = echoCancellationEnabled()
