@@ -1,0 +1,3 @@
+[submodule "linbridge-api"]
+	path = linbridge-api
+	url = git@github.com:suitepad-gmbh/linbridge-api.git

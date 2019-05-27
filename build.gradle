@@ -1,4 +1,13 @@
 buildscript {
+    ext {
+        gradle_version= '3.4.0'
+        kotlin_version='1.3.31'
+        spek_version='2.1.0-alpha.0.3+45afbe2'
+        android_junit5_version='1.4.2.0'
+        junit5_runner='0.2.2'
+        jacoco_version='0.8.1'
+        mockk_version='1.9'
+    }
     repositories {
         mavenCentral()
         mavenLocal()
@@ -20,84 +29,6 @@ allprojects {
         google()
         jcenter()
         maven { url "https://dl.bintray.com/spekframework/spek-dev" }
+        maven { url "https://suitepad.mycloudrepo.io/public/repositories/public"}
     }
-}
-
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
-apply plugin: 'kotlin-kapt'
-apply plugin: "de.mannodermaus.android-junit5"
-
-android {
-    compileSdkVersion 28
-
-    defaultConfig {
-        applicationId "de.suitepad.linbridge"
-        minSdkVersion 19
-        targetSdkVersion 28
-        versionCode 1000022
-        versionName "1.0.0.beta2"
-
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
-    }
-
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-    }
-
-    testOptions {
-        junitPlatform {
-            filters {
-                engines {
-                    include 'spek2'
-                }
-            }
-            jacocoOptions {
-                // here goes all jacoco config, for example
-                html.enabled = true
-                xml.enabled = false
-                csv.enabled = false
-                unitTests.all {
-                    testLogging.events = ["passed", "skipped", "failed"]
-                }
-            }
-        }
-    }
-
-}
-
-dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation project(':liblinphone-sdk')
-    implementation project(':linbridge-api')
-    implementation 'com.android.support:appcompat-v7:28.0.0'
-    implementation group: 'com.jakewharton.timber', name: 'timber', version: '4.7.1'
-}
-
-// Dagger dependencies
-dependencies {
-    implementation 'com.google.dagger:dagger-android:2.22.1'
-    annotationProcessor 'com.google.dagger:dagger-compiler:2.22.1'
-    kapt 'com.google.dagger:dagger-compiler:2.22.1'
-}
-
-// Test dependencies
-dependencies{
-    testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'com.android.support.test:runner:1.0.2'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
-
-    // spek
-    testImplementation "org.spekframework.spek2:spek-dsl-jvm:$spek_version"
-    testImplementation "org.spekframework.spek2:spek-runner-junit5:$spek_version"
-
-    // spek requires kotlin-reflect, omit when already in classpath
-    testImplementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
-    testImplementation "io.mockk:mockk:$mockk_version"
 }
