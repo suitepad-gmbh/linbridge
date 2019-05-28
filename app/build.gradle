@@ -4,8 +4,19 @@ apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 apply plugin: "de.mannodermaus.android-junit5"
 
+apply plugin: 'suitepad-gradletools-repos'
+apply plugin: 'suitepad-gradletools-signing'
+
+apply from: '../release.gradle'
+
 android {
     compileSdkVersion 28
+
+    signingConfigs {
+        release {
+            signing.load()
+        }
+    }
 
     defaultConfig {
         applicationId "de.suitepad.linbridge"
@@ -20,6 +31,7 @@ android {
 
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
@@ -44,6 +56,12 @@ android {
         }
     }
 
+}
+
+repositories {
+    mavenRemote {
+        load "suitepad"
+    }
 }
 
 dependencies {

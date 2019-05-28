@@ -1,4 +1,6 @@
 /local.properties
+/repositories.properties
+/signing.properties
 
 plugins
 

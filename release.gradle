@@ -1,0 +1,85 @@
+import groovy.json.JsonBuilder
+import groovy.json.JsonSlurper
+
+def ANDROID_MANIFEST_PATH = 'src/main/AndroidManifest.xml'
+def getMainActivity = { file ->
+    new XmlSlurper().parse(file).application.activity.find {
+        it.'intent-filter'.find { filter ->
+            filter.action.find {
+                it.'@android:name'.text() == 'android.intent.action.MAIN'
+            } && filter.category.find {
+                it.'@android:name'.text() == 'android.intent.category.LAUNCHER'
+            }
+        }
+    }.'@android:name'
+}
+
+project.android.applicationVariants.all { variant ->
+    def appName
+    //Check if an applicationName property is supplied; if not use the name of the parent project.
+    if (project.hasProperty("applicationName")) {
+        appName = applicationName
+    } else {
+        appName = "Linbridge"
+    }
+
+    def artifactName
+
+    variant.outputs.all { output ->
+        outputFileName = "${appName}-${output.baseName}-${variant.versionName}.apk"
+        artifactName = outputFileName
+    }
+
+    variant.assemble.doLast {
+        def buildType = variant.buildType.name
+
+        if (buildType == 'release') {
+            def outputPath = ["${rootDir}/app/release", "${buildDir}/outputs/apk/release"]
+
+            def mainActivity = System.getenv("MAIN_ACTIVITY")
+            if (mainActivity == null || mainActivity.isEmpty()) {
+                mainActivity = getMainActivity(file(ANDROID_MANIFEST_PATH))
+                if (mainActivity != null && !(mainActivity as String).isEmpty()) {
+                    if (!(mainActivity as String).contains(project.android.defaultConfig.applicationId)) {
+                        mainActivity = project.android.defaultConfig.applicationId + mainActivity
+                    }
+                } else {
+                    mainActivity = project.android.defaultConfig.applicationId
+                }
+            }
+
+            def content = """
+            {
+                "package_name": "${project.android.defaultConfig.applicationId}",
+            ${
+                if (mainActivity != null)
+                    "\"main_activity\": \"${mainActivity}\","
+                else ""
+            }
+            ${
+                if (artifactName != null) "\"artifact\": \"${artifactName}\","
+                else ""
+            }
+                "version": {
+                    "code": "${project.android.defaultConfig.versionCode}",
+                    "name": "${project.android.defaultConfig.versionName}"
+                }
+            }
+            """
+
+            def slurped = new JsonSlurper().parseText(content)
+            def builder = new JsonBuilder(slurped)
+            if (file(outputPath[0]).isDirectory()) {
+                file("${outputPath[0]}/output.json").write(
+                        builder.toPrettyString()
+                )
+            } else {
+                file("${outputPath[1]}/output.json").write(
+                        builder.toPrettyString()
+                )
+            }
+        }
+
+
+    }
+}

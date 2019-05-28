@@ -13,12 +13,14 @@ buildscript {
         mavenLocal()
         google()
         jcenter()
+        maven { url "https://suitepad.mycloudrepo.io/public/repositories/public"}
     }
     dependencies {
         classpath "com.android.tools.build:gradle:$gradle_version"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "de.mannodermaus.gradle.plugins:android-junit5:$android_junit5_version"
         classpath "org.jacoco:org.jacoco.core:$jacoco_version"
+        classpath 'de.suitepad:gradletools:1.2.0-SNAPSHOT'
     }
 }
 

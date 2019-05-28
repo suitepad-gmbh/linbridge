@@ -1,0 +1,260 @@
+# Java Gradle CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-java/ for more details
+#
+version: 2
+jobs:
+  build:
+    working_directory: ~/linbridge
+    docker:
+      - image: circleci/android:api-28-alpha
+
+    environment:
+      JVM_OPTS: -Xmx3200m
+      LINT_PRINT_STACKTRACE: true
+
+    steps:
+      - checkout
+      - run: git submodule update --init --recursive
+
+      # Download and cache dependencies
+      - restore_cache:
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum "app/build.gradle" }}
+
+      - run:
+          name: Download Dependencies
+          command: ./gradlew androidDependencies
+
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum "app/build.gradle" }}
+
+      - run:
+          name: Compile
+          command: ./gradlew compileReleaseSources
+
+      # run lint
+      - run:
+          name: Run lint check
+          command: ./gradlew lintRelease
+
+      - run:
+          name: Save lint results
+          command: |
+            mkdir -p ~/lint/
+            find . -type f -regex ".*/build/reports/lint-results-release.html" -exec cp {} ~/lint/ \;
+            find . -type f -regex ".*/build/reports/lint-results-release.xml" -exec cp {} ~/lint/ \;
+          when: always
+
+      - store_artifacts:
+          path: ~/lint
+          destination: lint
+
+      - persist_to_workspace:
+          root: ./
+          paths:
+            - build
+            - app/build
+            - linbridge-api/build
+
+  test:
+    working_directory: ~/linbridge
+    docker:
+      - image: circleci/android:api-28-alpha
+
+    environment:
+      JVM_OPTS: -Xmx3200m
+
+    steps:
+      - checkout
+      - run: git submodule update --init --recursive
+
+      # Download and cache dependencies
+      - restore_cache:
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum "app/build.gradle" }}
+
+      - run:
+          name: Download Dependencies
+          command: ./gradlew androidDependencies
+
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum "app/build.gradle" }}
+
+      - attach_workspace:
+          at: ./
+
+      # run lint
+      - run:
+          name: Run tests
+          command: ./gradlew testReleaseUnitTest
+
+      - run:
+          name: Save test results
+          command: |
+            mkdir -p ~/junit/
+            mkdir -p ~/junit_reports/
+            mkdir -p ~/junit_coverage/
+            find . -type f -regex ".*/build/test-results/.*/.*xml" -exec cp {} ~/junit/ \;
+            modules_with_coverage=$(find . -type f -regex ".*/build/reports/jacoco/.*/*.xml" | sed 's/\.\/\(.*\)\/build.*/\1/')
+            for module in $modules_with_coverage;do
+              module_friendly_name=$(echo $module | tr '/' '_')
+              cp ${module}/build/reports/jacoco/jacocoTestReleaseReport/jacocoTestReleaseReport.xml ~/junit/${module_friendly_name}_coverage.xml
+              cp -r ${module}/build/reports/jacoco/jacocoTestReleaseReport/html ~/junit_coverage/${module_friendly_name}_coverage
+            done;
+            modules_with_reports=$(find . -type f -regex ".*/build/reports/tests/testReleaseUnitTest/index.html" | sed 's/\.\/\(.*\)\/build.*/\1/')
+            for module in $modules_with_reports; do
+              file=$(dirname $(find . -type f -regex "./${module}/build/reports/tests/testReleaseUnitTest/index.html"))
+              cp -r $file ~/junit_reports/$(echo $module | tr '/' '_')
+            done;
+          when: always
+      - store_test_results:
+          path: ~/junit
+      - store_artifacts:
+          path: ~/junit
+          destination: test_xml
+      - store_artifacts:
+          path: ~/junit_reports
+          destination: test_results
+      - store_artifacts:
+          path: ~/junit_coverage
+          destination: test_coverage
+
+      - persist_to_workspace:
+          root: ./
+          paths:
+            - build
+            - app/build
+            - linbridge-api/build
+
+
+  release:
+    working_directory: ~/linbridge
+    docker:
+      - image: circleci/android:api-28-alpha
+
+    environment:
+      JVM_OPTS: -Xmx3200m
+
+    steps:
+      - checkout
+      - run: git submodule update --init --recursive
+      - run:
+          name: Load signing keys
+          command: |
+            mkdir -p $(dirname $KEYSTORE_FILE)
+            cd $(dirname $KEYSTORE_FILE)
+            git clone git@github.com:suitepad-gmbh/apk_keystore.git .
+
+      # Download and cache dependencies
+      - restore_cache:
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum "app/build.gradle" }}
+
+      - run:
+          name: Download Dependencies
+          command: ./gradlew androidDependencies
+
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum "app/build.gradle" }}
+
+      - attach_workspace:
+          at: ./
+
+      # run build
+      - run:
+          name: Build
+          command: ./gradlew :app:assembleRelease
+
+      - store_artifacts:
+          path: app/build/outputs/apk/release
+          destination: apk
+
+      - persist_to_workspace:
+          root: app/build/outputs/apk/
+          paths:
+            - release
+
+  deploy:
+    working_directory: ~/
+    docker:
+      - image: circleci/python:3.4-jessie
+
+    steps:
+      - attach_workspace:
+          at: /tmp/artifacts
+
+      - run:
+          name: Loading tools
+          command: |
+            mkdir .ssh
+            echo -e "Host github.com\n\tStrictHostKeyChecking no\n" > .ssh/config
+            git clone git@github.com:suitepad-gmbh/apk_keystore.git release_tools
+
+      - restore_cache:
+          key: deps1-{{ .Branch }}-{{ checksum "release_tools/requirements.txt" }}
+
+      - run:
+          name: Download Dependencies
+          command: |
+            cd release_tools
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements.txt
+
+      - save_cache:
+          key: deps1-{{ .Branch }}-{{ checksum "release_tools/requirements.txt" }}
+          paths:
+            - release_tools/venv
+
+      - run:
+          name: Deploy to backend
+          command: |
+            . release_tools/venv/bin/activate
+            python release_tools/deploy.py --manifest /tmp/artifacts/release/output.json \
+              --app-id $APPLICATION_ID --token $BACKEND_TOKEN --user-id $BACKEND_USER_ID
+
+workflows:
+  version: 2
+  Linbridge:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /.*/
+      - test:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /.*/
+      - release:
+          context: apk_signing
+          requires:
+            - test
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}.*/
+      - hold:
+          type: approval
+          requires:
+            - release
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}.*/
+      - deploy:
+          context: apk_deployment
+          requires:
+            - hold
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}.*/
