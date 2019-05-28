@@ -8,9 +8,11 @@ import de.suitepad.linbridge.dispatcher.BridgeEventDispatcher
 import de.suitepad.linbridge.dispatcher.IBridgeEventDispatcher
 import de.suitepad.linbridge.manager.IManager
 import de.suitepad.linbridge.logger.LinbridgeEventLogger
+import de.suitepad.linbridge.logger.LogCatcher
 import de.suitepad.linbridge.manager.LinbridgeManager
 import org.linphone.core.Core
 import org.linphone.core.Factory
+import org.linphone.core.LoggingServiceListener
 import javax.inject.Named
 
 @Module(includes = [BridgeModule::class])
@@ -49,9 +51,10 @@ class ManagerModule(val debug: Boolean) {
 
     @Provides
     @BridgeServiceComponent.BridgeServiceScope
-    fun provideCoreFactory(@DebugFlag debug: Boolean): Factory {
+    fun provideCoreFactory(@DebugFlag debug: Boolean, loggingServiceListener: LogCatcher): Factory {
         return Factory.instance().apply {
             setDebugMode(debug, "LibLinphone")
+            this.loggingService.setListener(loggingServiceListener)
         }
     }
 

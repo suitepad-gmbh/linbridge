@@ -7,6 +7,7 @@ buildscript {
         junit5_runner='0.2.2'
         jacoco_version='0.8.1'
         mockk_version='1.9'
+        coroutine_version = '1.2.1'
     }
     repositories {
         mavenCentral()
