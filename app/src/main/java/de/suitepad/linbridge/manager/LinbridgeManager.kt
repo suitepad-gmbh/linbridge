@@ -5,6 +5,7 @@ import de.suitepad.linbridge.api.AudioConfiguration
 import de.suitepad.linbridge.api.core.*
 import org.linphone.core.*
 import timber.log.Timber
+import java.lang.IllegalStateException
 import java.util.*
 
 class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener, IManager {
@@ -64,7 +65,13 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
         core.clearAllAuthInfo()
 
         val sipAddress = "sip:$username@$host:$port"
-        val address: Address = core.createAddress(sipAddress)
+        val address: Address = try {
+            core.createAddress(sipAddress)
+        } catch (e: IllegalStateException) {
+            Timber.e(e, "couldn't connect using \"$sipAddress\"")
+            clearCredentials()
+            return
+        }
 
         val authenticationInfo = core.createAuthInfo(address.username, null,
                 password, null, null, address.domain)
