@@ -22,8 +22,8 @@ android {
         applicationId "de.suitepad.linbridge"
         minSdkVersion 19
         targetSdkVersion 28
-        versionCode 1000033
-        versionName "1.0.0.rc3"
+        versionCode 1000034
+        versionName "1.0.0.rc4"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
