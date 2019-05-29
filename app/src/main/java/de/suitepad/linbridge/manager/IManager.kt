@@ -24,6 +24,8 @@ interface IManager {
      */
     fun configure(settings: AudioConfiguration)
 
+    fun clearCredentials()
+
     /**
      * authenticates and connects to the SIP server
      * @param host SIP server hostname or ip address

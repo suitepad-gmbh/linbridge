@@ -99,6 +99,12 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
         core.refreshRegisters()
     }
 
+    override fun clearCredentials() {
+        core.clearProxyConfig()
+        core.clearAllAuthInfo()
+        core.refreshRegisters()
+    }
+
     override fun call(destination: String): CallError? {
         if (!core.isNetworkReachable) {
             return CallError.NetworkUnreachable

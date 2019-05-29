@@ -17,12 +17,10 @@ import de.suitepad.linbridge.dep.DaggerBridgeServiceComponent
 import de.suitepad.linbridge.dep.ManagerModule
 import de.suitepad.linbridge.dispatcher.IBridgeEventDispatcher
 import de.suitepad.linbridge.manager.IManager
-import org.linphone.core.Core
 import timber.log.Timber
 import java.io.File
 import java.lang.IllegalArgumentException
 import java.lang.IllegalStateException
-import java.lang.NullPointerException
 import javax.inject.Inject
 
 class BridgeService : Service(), IBridgeService {
@@ -92,26 +90,21 @@ class BridgeService : Service(), IBridgeService {
     }
 
     override fun authenticate(credentials: Credentials?) {
-        if (credentials == null) {
-            throw NullPointerException("credentials are null")
+        if (credentials == null ||
+                credentials.host == null ||
+                credentials.username == null ||
+                credentials.password == null) {
+            linphoneManager.clearCredentials()
+            return
+        } else {
+            linphoneManager.authenticate(
+                    credentials.host,
+                    if (credentials.port == 0) 5060 else credentials.port,
+                    credentials.username,
+                    credentials.password,
+                    credentials.proxy
+            )
         }
-
-        if (credentials.host == null) {
-            throw NullPointerException("host is null")
-        }
-
-        val servicePort = if (credentials.port == 0) 5060 else credentials.port
-
-        if (credentials.username == null) {
-            throw NullPointerException("username is null")
-        }
-
-        if (credentials.password == null) {
-            throw NullPointerException("password is null")
-        }
-
-        linphoneManager.authenticate(credentials.host, servicePort, credentials.username,
-                credentials.password, credentials.proxy)
     }
 
     override fun updateConfig(configuration: AudioConfiguration?) {
@@ -119,13 +112,7 @@ class BridgeService : Service(), IBridgeService {
         if (configuration == null) {
             return
         }
-//        val listenerBackup = eventDispatcher.listener
         linphoneManager.configure(configuration)
-//        linphoneManager.destroy()
-//        init()
-//        eventDispatcher.shouldReconfigure = false
-//        eventDispatcher.listener = listenerBackup
-//        linphoneManager.start()
     }
 
     override fun getConfig(): AudioConfiguration {
@@ -134,7 +121,7 @@ class BridgeService : Service(), IBridgeService {
 
     override fun call(destination: String?): CallError? {
         if (destination == null) {
-            throw NullPointerException("Destination can't be null")
+            return null
         }
 
         return linphoneManager.call(destination)
@@ -142,7 +129,7 @@ class BridgeService : Service(), IBridgeService {
 
     override fun registerSipListener(listener: ILinbridgeListener?) {
         if (listener == null)
-            throw NullPointerException("passed a null listener")
+            throw IllegalArgumentException("passed a null listener")
 
         eventDispatcher.listener = listener
         Timber.d("registerSipListener: $listener")
