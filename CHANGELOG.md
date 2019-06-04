@@ -1,6 +1,9 @@
 # CHANGELOG
+### 1.0.2
+- FEAT: add firebase integration
+
 ### 1.0.1
-- support min sdk 16
+- FIX: support min sdk 16
 
 ### 1.0.0.rc4/1.0.0
 - CHORE: set java memory params for gradle build
