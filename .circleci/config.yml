@@ -31,6 +31,10 @@ jobs:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum "app/build.gradle" }}
 
       - run:
+          name: Base64 decode firebase file
+          command: echo $GOOGLE_SERVICES | base64 -d > app/google-services.json
+
+      - run:
           name: Compile
           command: ./gradlew compileReleaseSources
 
@@ -85,6 +89,10 @@ jobs:
 
       - attach_workspace:
           at: ./
+
+      - run:
+          name: Base64 decode firebase file
+          command: echo $GOOGLE_SERVICES | base64 -d > app/google-services.json
 
       # run lint
       - run:
@@ -163,6 +171,10 @@ jobs:
 
       - attach_workspace:
           at: ./
+
+      - run:
+          name: Base64 decode firebase file
+          command: echo $GOOGLE_SERVICES | base64 -d > app/google-services.json
 
       # run build
       - run:

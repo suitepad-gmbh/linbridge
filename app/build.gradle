@@ -3,6 +3,7 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 apply plugin: "de.mannodermaus.android-junit5"
+apply plugin: 'io.fabric'
 
 apply plugin: 'suitepad-gradletools-repos'
 apply plugin: 'suitepad-gradletools-signing'
@@ -101,5 +102,9 @@ dependencies {
 }
 
 dependencies {
+    implementation 'com.google.firebase:firebase-core:16.0.9'
+    implementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
     implementation 'com.android.support.constraint:constraint-layout:+'
 }
+
+apply plugin: 'com.google.gms.google-services'

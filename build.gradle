@@ -15,6 +15,9 @@ buildscript {
         google()
         jcenter()
         maven { url "https://suitepad.mycloudrepo.io/public/repositories/public"}
+        maven {
+            url 'https://maven.fabric.io/public'
+        }
     }
     dependencies {
         classpath "com.android.tools.build:gradle:$gradle_version"
@@ -22,6 +25,8 @@ buildscript {
         classpath "de.mannodermaus.gradle.plugins:android-junit5:$android_junit5_version"
         classpath "org.jacoco:org.jacoco.core:$jacoco_version"
         classpath 'de.suitepad:gradletools:1.2.0-SNAPSHOT'
+        classpath 'com.google.gms:google-services:4.2.0'
+        classpath 'io.fabric.tools:gradle:1.29.0'
     }
 }
 
