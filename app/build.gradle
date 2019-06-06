@@ -107,4 +107,9 @@ dependencies {
     implementation 'com.android.support.constraint:constraint-layout:+'
 }
 
+configurations.all {
+    resolutionStrategy.force 'com.android.support:support-media-compat:28.0.0'
+    resolutionStrategy.force 'com.android.support:support-v4:28.0.0'
+}
+
 apply plugin: 'com.google.gms.google-services'
