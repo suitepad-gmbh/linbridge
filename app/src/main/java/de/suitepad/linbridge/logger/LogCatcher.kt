@@ -2,42 +2,55 @@ package de.suitepad.linbridge.logger
 
 import android.annotation.SuppressLint
 import android.util.Log
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.linphone.core.LogLevel
 import org.linphone.core.LoggingService
 import org.linphone.core.LoggingServiceListener
 import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.coroutines.CoroutineContext
 
 @SuppressLint("SimpleDateFormat")
 private val simpleDateFormat = SimpleDateFormat("MM-dd HH:mm:ss")
 
-class LogCatcher : Timber.Tree(), LoggingServiceListener {
+class LogCatcher : Timber.Tree(), LoggingServiceListener, CoroutineScope {
 
     companion object {
         const val LOG_SIZE = 250
+
+        const val LINE_BREAK = "<br />"
     }
 
     val logListeners = mutableSetOf<LogListener>()
     val log = mutableListOf<LogEntry>()
 
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Default + logJob
+
+    private val logJob: Job = Job()
+    private val mutex = Mutex()
+
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
         val newLogEntry = LogEntry(Date(), priority, tag, message, t)
-        log.add(newLogEntry)
-        if (log.size > LOG_SIZE) {
-            log.removeAt(0)
-        }
-        logListeners.forEach {
-            it.log(newLogEntry.getStyledText())
+        launch {
+            mutex.withLock {
+                log.add(newLogEntry)
+                if (log.size > LOG_SIZE) {
+                    log.removeAt(0)
+                }
+                logListeners.forEach {
+                    it.log(newLogEntry.getStyledText())
+                }
+            }
         }
     }
 
     fun addLogListener(logListener: LogListener) {
         logListeners.add(logListener)
-        GlobalScope.launch(Dispatchers.IO) {
+        launch {
             logListener.log(buildLogText())
         }
     }
@@ -46,11 +59,12 @@ class LogCatcher : Timber.Tree(), LoggingServiceListener {
         logListeners.remove(logListener)
     }
 
-    fun buildLogText(): String {
-        var result: String = ""
-        val iterator = log.iterator()
-        while (iterator.hasNext()) {
-            result += iterator.next().getStyledText()
+    private suspend fun buildLogText(): String {
+        var result = ""
+        mutex.withLock {
+            log.forEach {
+                result += it.getStyledText()
+            }
         }
         return result
     }
@@ -70,7 +84,7 @@ class LogCatcher : Timber.Tree(), LoggingServiceListener {
 
         private fun getColoredText(color: String, date: Date, tag: String?, message: String): String {
             return message.lines().fold("<font color=\"$color\">${simpleDateFormat.format(date)} ") { acc, c ->
-                "${if (tag != null) "[$tag] " else ""}$acc$c<br />"
+                "${if (tag != null) "[$tag] " else ""}$acc$c$LINE_BREAK"
             } + "</font>"
         }
 
