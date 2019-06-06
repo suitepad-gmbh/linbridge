@@ -1,4 +1,7 @@
 # CHANGELOG
+### 1.1.0
+- FEAT: add crashlytics configuration
+
 ### 1.0.3
 - FEAT: collapse repeating log lines in a single one
 - FEAT: show counter indicator on collapsed lines
