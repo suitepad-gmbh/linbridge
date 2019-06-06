@@ -10,6 +10,11 @@ import kotlinx.coroutines.*
 import timber.log.Timber
 
 class MainActivity : AppCompatActivity(), LogCatcher.LogListener {
+
+    companion object {
+        const val SIZE_LIMIT = 2000
+    }
+
     var cachedLog: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,6 +49,12 @@ class MainActivity : AppCompatActivity(), LogCatcher.LogListener {
 
     override fun log(message: String) {
         runBlocking(Dispatchers.Main) {
+            val logList = cachedLog.split(LogCatcher.LINE_BREAK)
+            if (logList.size > SIZE_LIMIT) {
+                cachedLog = logList.subList(logList.size - SIZE_LIMIT, logList.size).fold("...") { acc, s ->
+                    acc + LogCatcher.LINE_BREAK + s
+                }
+            }
             cachedLog += message
             val shouldScroll = isAnchoredToBottom()
             setLog(cachedLog)
