@@ -201,7 +201,7 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
     }
 
     override fun getCurrentCallDuration(): Int {
-        return core.currentCall.duration
+        return core.currentCall?.duration ?: -1
     }
 
     //<editor-fold desc="CoreListener">
