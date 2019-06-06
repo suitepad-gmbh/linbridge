@@ -1,4 +1,9 @@
 # CHANGELOG
+### 1.0.3
+- FEAT: collapse repeating log lines in a single one
+- FEAT: show counter indicator on collapsed lines
+- FIX: concurrent modification exception on log list
+
 ### 1.0.2
 - FEAT: add firebase integration
 
