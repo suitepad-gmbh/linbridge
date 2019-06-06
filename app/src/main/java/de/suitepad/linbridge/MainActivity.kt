@@ -47,12 +47,17 @@ class MainActivity : AppCompatActivity(), LogCatcher.LogListener {
         return ((logScroller.scrollY + logScroller.measuredHeight) - logText.height) == 0
     }
 
-    override fun log(message: String) {
+    override fun log(message: String, replaceLastLine: Boolean) {
         runBlocking(Dispatchers.Main) {
-            val logList = cachedLog.split(LogCatcher.LINE_BREAK)
-            if (logList.size > SIZE_LIMIT) {
+            var logList = cachedLog.split(LogCatcher.EXTERNAL_LINE_BREAK)
+            if (replaceLastLine) {
+                cachedLog = logList.subList(0, logList.size - 2).fold("") { acc, s ->
+                    acc + s + LogCatcher.EXTERNAL_LINE_BREAK
+                }
+                cachedLog = cachedLog.substringBeforeLast(LogCatcher.EXTERNAL_LINE_BREAK) + LogCatcher.EXTERNAL_LINE_BREAK
+            } else if (logList.size > SIZE_LIMIT) {
                 cachedLog = logList.subList(logList.size - SIZE_LIMIT, logList.size).fold("...") { acc, s ->
-                    acc + LogCatcher.LINE_BREAK + s
+                    acc + LogCatcher.EXTERNAL_LINE_BREAK + s
                 }
             }
             cachedLog += message

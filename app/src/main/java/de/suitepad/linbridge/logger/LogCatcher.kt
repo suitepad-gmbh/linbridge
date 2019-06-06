@@ -21,7 +21,8 @@ class LogCatcher : Timber.Tree(), LoggingServiceListener, CoroutineScope {
     companion object {
         const val LOG_SIZE = 250
 
-        const val LINE_BREAK = "<br />"
+        private const val LINE_BREAK = "<br />"
+        const val EXTERNAL_LINE_BREAK = "<br  />"
     }
 
     val logListeners = mutableSetOf<LogListener>()
@@ -37,12 +38,20 @@ class LogCatcher : Timber.Tree(), LoggingServiceListener, CoroutineScope {
         val newLogEntry = LogEntry(Date(), priority, tag, message, t)
         launch {
             mutex.withLock {
-                log.add(newLogEntry)
-                if (log.size > LOG_SIZE) {
-                    log.removeAt(0)
-                }
-                logListeners.forEach {
-                    it.log(newLogEntry.getStyledText())
+                if (log.isNotEmpty() && newLogEntry.equals(log.last())) {
+                    log[log.size - 1].date = newLogEntry.date
+                    log[log.size - 1].count++
+                    logListeners.forEach {
+                        it.log(log[log.size - 1].getStyledText(), true)
+                    }
+                } else {
+                    log.add(newLogEntry)
+                    if (log.size > LOG_SIZE) {
+                        log.removeAt(0)
+                    }
+                    logListeners.forEach {
+                        it.log(newLogEntry.getStyledText(), false)
+                    }
                 }
             }
         }
@@ -51,7 +60,7 @@ class LogCatcher : Timber.Tree(), LoggingServiceListener, CoroutineScope {
     fun addLogListener(logListener: LogListener) {
         logListeners.add(logListener)
         launch {
-            logListener.log(buildLogText())
+            logListener.log(buildLogText(), false)
         }
     }
 
@@ -69,10 +78,10 @@ class LogCatcher : Timber.Tree(), LoggingServiceListener, CoroutineScope {
         return result
     }
 
-    class LogEntry(val date: Date, val priority: Int, val tag: String?, val message: String, var t: Throwable?) {
+    class LogEntry(var date: Date, val priority: Int, val tag: String?, val message: String, var t: Throwable?, var count: Int = 1) {
 
         fun getStyledText(): String {
-            var result = ""
+            var result = if (count>1) "<font color=\"red\">[x$count]</font>" else ""
             if (!message.isBlank()) {
                 result += getColoredText(getColor(priority), date, tag, message)
             }
@@ -83,9 +92,9 @@ class LogCatcher : Timber.Tree(), LoggingServiceListener, CoroutineScope {
         }
 
         private fun getColoredText(color: String, date: Date, tag: String?, message: String): String {
-            return message.lines().fold("<font color=\"$color\">${simpleDateFormat.format(date)} ") { acc, c ->
-                "${if (tag != null) "[$tag] " else ""}$acc$c$LINE_BREAK"
-            } + "</font>"
+            return message.lines().foldIndexed("<font color=\"$color\">${simpleDateFormat.format(date)} ") { index, acc, c ->
+                "${if (tag != null) "[$tag] " else ""}$acc$c${if (index == message.lines().size-1) "" else LINE_BREAK}"
+            } + "</font>$EXTERNAL_LINE_BREAK"
         }
 
         fun getColor(logPriority: Int): String = when (logPriority) {
@@ -96,6 +105,29 @@ class LogCatcher : Timber.Tree(), LoggingServiceListener, CoroutineScope {
             else -> "white"
         }
 
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as LogEntry
+
+            if (priority != other.priority) return false
+            if (tag != other.tag) return false
+            if (message != other.message) return false
+            if (t != other.t) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = priority
+            result = 31 * result + (tag?.hashCode() ?: 0)
+            result = 31 * result + message.hashCode()
+            result = 31 * result + (t?.hashCode() ?: 0)
+            return result
+        }
+
+
     }
 
     override fun onLogMessageWritten(p0: LoggingService?, p1: String?, p2: LogLevel?, p3: String?) {
@@ -103,7 +135,7 @@ class LogCatcher : Timber.Tree(), LoggingServiceListener, CoroutineScope {
     }
 
     interface LogListener {
-        fun log(message: String)
+        fun log(message: String, replaceLastLine: Boolean)
     }
 
 }
