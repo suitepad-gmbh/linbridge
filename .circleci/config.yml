@@ -22,6 +22,12 @@ jobs:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum "app/build.gradle" }}
 
       - run:
+          name: Load parameters
+          command: |
+            echo sendgrid.mailto=$SENDGRID_MAILTO >> local.properties
+            echo sendgrid.apikey=$SENDGRID_APIKEY >> local.properties
+
+      - run:
           name: Download Dependencies
           command: ./gradlew androidDependencies
 
@@ -77,6 +83,12 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum "app/build.gradle" }}
+
+      - run:
+          name: Load parameters
+          command: |
+            echo sendgrid.mailto=$SENDGRID_MAILTO >> local.properties
+            echo sendgrid.apikey=$SENDGRID_APIKEY >> local.properties
 
       - run:
           name: Download Dependencies
@@ -159,6 +171,12 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum "app/build.gradle" }}
+
+      - run:
+          name: Load parameters
+          command: |
+            echo sendgrid.mailto=$SENDGRID_MAILTO >> local.properties
+            echo sendgrid.apikey=$SENDGRID_APIKEY >> local.properties
 
       - run:
           name: Download Dependencies
