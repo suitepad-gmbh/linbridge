@@ -10,6 +10,18 @@ apply plugin: 'suitepad-gradletools-signing'
 
 apply from: '../release.gradle'
 
+def getDestinationEmailAddress() {
+    Properties properties = new Properties()
+    properties.load(project.rootProject.file('local.properties').newDataInputStream())
+    return properties.getProperty("sendgrid.mailto")
+}
+
+def getSendgridApiKey() {
+    Properties properties = new Properties()
+    properties.load(project.rootProject.file('local.properties').newDataInputStream())
+    return properties.getProperty("sendgrid.apikey")
+}
+
 android {
     compileSdkVersion 28
 
@@ -27,7 +39,8 @@ android {
         versionName "1.1.0"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
+        buildConfigField 'String', 'SENDGRID_MAIL_TO', "\"${getDestinationEmailAddress()}\""
+        buildConfigField 'String', 'SENDGRID_API_KEY', "\"${getSendgridApiKey()}\""
     }
 
     buildTypes {
@@ -77,6 +90,10 @@ dependencies {
     implementation project(':linbridge-api')
     implementation 'com.android.support:appcompat-v7:28.0.0'
     implementation group: 'com.jakewharton.timber', name: 'timber', version: '4.7.1'
+    implementation ('com.github.danysantiago:sendgrid-android:1') {
+        exclude group: 'org.apache.httpcomponents.httpclient-android'
+        exclude group: 'org.apache.httpcomponents', module: 'httpclient'
+    }
 }
 
 // Dagger dependencies

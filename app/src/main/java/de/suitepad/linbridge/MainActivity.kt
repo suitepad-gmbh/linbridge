@@ -4,6 +4,9 @@ import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.text.Html
 import android.view.View
+import android.widget.Toast
+import com.sendgrid.SendGrid
+import de.suitepad.linbridge.helper.LogsExportHelper
 import de.suitepad.linbridge.logger.LogCatcher
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
@@ -71,6 +74,15 @@ class MainActivity : AppCompatActivity(), LogCatcher.LogListener {
 
     fun getLogCatcher(): LogCatcher {
         return (application as BridgeApplication).logCatcher
+    }
+
+    fun sendButton(view: View) {
+        GlobalScope.launch(Dispatchers.Main) {
+            LogsExportHelper(SendGrid(BuildConfig.SENDGRID_API_KEY)).also {
+                it.logs = cachedLog
+            }.sendIt()
+            Toast.makeText(this@MainActivity, "logs successfully uploaded", Toast.LENGTH_LONG).show()
+        }.start()
     }
 
 }
