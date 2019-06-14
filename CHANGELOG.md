@@ -1,4 +1,7 @@
 # CHANGELOG
+### 1.2.0
+- FEAT: send logs via email
+
 ### 1.1.0
 - FEAT: add crashlytics configuration
 
