@@ -1,4 +1,8 @@
 # CHANGELOG
+### 1.3.0
+- FEAT: make log mails more browser friendly
+- FEAT: add dialog for info input and confirmation before sending logs
+
 ### 1.2.0
 - FEAT: send logs via email
 
