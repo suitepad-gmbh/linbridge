@@ -24,7 +24,17 @@ class LogsExportHelper(private val sendGrid: SendGrid) {
         addTo(receiverEmail)
         subject = "Logs from linbridge"
         text = defaultMailBody
-        addAttachment("linbridge_logs.html", logs.byteInputStream())
+        addAttachment("linbridge_logs.html", makeLogsBrowserFriendly(logs).byteInputStream())
+    }
+
+    private fun makeLogsBrowserFriendly(logs: String): String {
+        return """<html>
+            <head></head>
+            <body text="white" bgcolor="black">
+              $logs
+            </body>
+            </html>
+        """.trimIndent()
     }
 
     /**
