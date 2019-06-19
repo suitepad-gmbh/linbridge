@@ -19,12 +19,19 @@ class LogsExportHelper(private val sendGrid: SendGrid) {
 
     lateinit var logs: String
 
+    var hotelName: String? = null
+    var description: String? = null
+
     private fun createMail(): SendGrid.Email = SendGrid.Email().apply {
         from = senderEmail
         addTo(receiverEmail)
-        subject = "Logs from linbridge"
-        text = defaultMailBody
-        addAttachment("linbridge_logs.html", makeLogsBrowserFriendly(logs).byteInputStream())
+        subject = "Linbridge logs${if (hotelName.isNullOrBlank()) "" else " $hotelName"}"
+        text = """
+            ${if (hotelName.isNullOrBlank()) "" else "Logs from $hotelName"}
+            ${if (description.isNullOrBlank()) "No description provided" else "$description"}
+            $defaultMailBody
+        """.trimIndent()
+        addAttachment("linbridge_logs${if (hotelName.isNullOrBlank()) "" else "_$hotelName"}.html", makeLogsBrowserFriendly(logs).byteInputStream())
     }
 
     private fun makeLogsBrowserFriendly(logs: String): String {

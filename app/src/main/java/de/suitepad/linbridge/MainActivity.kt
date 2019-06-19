@@ -1,7 +1,10 @@
 package de.suitepad.linbridge
 
+import android.content.DialogInterface
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.support.v4.app.DialogFragment
+import android.support.v7.app.AlertDialog
 import android.text.Html
 import android.view.View
 import android.widget.Toast
@@ -9,6 +12,7 @@ import com.sendgrid.SendGrid
 import de.suitepad.linbridge.helper.LogsExportHelper
 import de.suitepad.linbridge.logger.LogCatcher
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.dialog_sendlogs.view.*
 import kotlinx.coroutines.*
 import timber.log.Timber
 
@@ -77,12 +81,24 @@ class MainActivity : AppCompatActivity(), LogCatcher.LogListener {
     }
 
     fun sendButton(view: View) {
-        GlobalScope.launch(Dispatchers.Main) {
-            LogsExportHelper(SendGrid(BuildConfig.SENDGRID_API_KEY)).also {
-                it.logs = cachedLog
-            }.sendIt()
-            Toast.makeText(this@MainActivity, "logs successfully uploaded", Toast.LENGTH_LONG).show()
-        }.start()
+        val view = View.inflate(this, R.layout.dialog_sendlogs, null)
+        val dialog = AlertDialog.Builder(this)
+                .setNegativeButton("cancel") { dialog, which ->
+                    dialog.dismiss()
+                }.setPositiveButton("send") { dialog, which ->
+                    GlobalScope.launch(Dispatchers.Main) {
+                        LogsExportHelper(SendGrid(BuildConfig.SENDGRID_API_KEY)).also {
+                            it.logs = cachedLog
+                            it.hotelName = view.hotelName.text.toString()
+                            it.description = view.logsDescription.text.toString()
+                        }.sendIt()
+                        Toast.makeText(this@MainActivity, "logs successfully uploaded", Toast.LENGTH_LONG).show()
+                    }.start()
+                    dialog.dismiss()
+                }.setTitle("Send logs to SuitePad")
+                .setView(view)
+                .create()
+        dialog.show()
     }
 
 }
