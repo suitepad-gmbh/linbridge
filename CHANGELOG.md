@@ -1,4 +1,7 @@
 # CHANGELOG
+### 1.3.1
+- FEAT: rebuild using new google firebase api key
+
 ### 1.3.0
 - FEAT: make log mails more browser friendly
 - FEAT: add dialog for info input and confirmation before sending logs
