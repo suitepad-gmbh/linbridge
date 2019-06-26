@@ -14,67 +14,39 @@ class BridgeEventDispatcher : OptionalCoreListener, IBridgeEventDispatcher {
 
     override var shouldReconfigure = true
 
-    override fun onSubscriptionStateChanged(lc: Core?, lev: Event?, state: SubscriptionState?) {
-        Timber.i("subscription state changed to $state event name is ${lev?.name}")
+    override fun subscriptionStateChanged(p0: LinphoneCore?, p1: LinphoneEvent?, p2: SubscriptionState?) {
+        super.subscriptionStateChanged(p0, p1, p2)
+        Timber.i("subscription state changed to $p2")
     }
 
-    override fun onCallStateChanged(lc: Core?, call: Call?, cstate: Call.State?, message: String?) {
+    override fun callState(p0: LinphoneCore?, call: LinphoneCall?, cstate: LinphoneCall.State?, p3: String?) {
         Timber.i("call state [$cstate]")
         if (cstate != null && call != null) {
-            val callState = CallState.valueOf(cstate.name)
-            callState.number = call.remoteAddress.username
+            val callState = CallState.valueOf(cstate.toString())
+            callState.number = call.remoteAddress.userName
             callState.contactName = call.remoteAddress.displayName
             listener?.callStateChanged(callState)
         }
     }
 
-    override fun onAuthenticationRequested(lc: Core?, authInfo: AuthInfo?, method: AuthMethod?) {
-        Timber.i("authentication requested $method")
-    }
-
-    override fun onNetworkReachable(lc: Core?, reachable: Boolean) {
-        Timber.i("onNetworkReachable $reachable")
-    }
-
-    override fun onSubscribeReceived(lc: Core?, lev: Event?, subscribeEvent: String?, body: Content?) {
-        Timber.i("onSubscribeReceived: $subscribeEvent")
-    }
-
-    override fun onRegistrationStateChanged(lc: Core?, cfg: ProxyConfig?, cstate: RegistrationState?, message: String?) {
+    override fun registrationState(p0: LinphoneCore?, proxyConfig: LinphoneProxyConfig?, cstate: LinphoneCore.RegistrationState?, message: String?) {
         Timber.i("registration state changed [$cstate] $message")
         Timber.i("onRegistrationStateChanged: $listener")
         if (cstate != null) {
-            listener?.authenticationStateChanged(AuthenticationState.valueOf(cstate.name))
+            listener?.authenticationStateChanged(when (cstate) {
+                LinphoneCore.RegistrationState.RegistrationFailed -> AuthenticationState.Failed
+                LinphoneCore.RegistrationState.RegistrationCleared -> AuthenticationState.Cleared
+                LinphoneCore.RegistrationState.RegistrationOk -> AuthenticationState.Ok
+                LinphoneCore.RegistrationState.RegistrationProgress -> AuthenticationState.Progress
+                else -> AuthenticationState.Cleared
+            })
         }
     }
 
-    override fun onInfoReceived(lc: Core?, call: Call?, msg: InfoMessage?) {
-        Timber.i("info message received: $msg")
-    }
-
-    override fun onCallStatsUpdated(lc: Core?, call: Call?, stats: CallStats?) {
-        Timber.v("onCallStatsUpdated: call stats updated")
-        Timber.v("onCallStatsUpdated: delay: ${stats?.roundTripDelay}")
-        Timber.v("onCallStatsUpdated: upload: ${stats?.uploadBandwidth}")
-        Timber.v("onCallStatsUpdated: download ${stats?.downloadBandwidth}")
-    }
-
-    override fun onConfiguringStatus(lc: Core?, status: ConfiguringState?, message: String?) {
-        Timber.i("onConfiguringStatus: $status $message")
-    }
-
-    override fun onCallCreated(lc: Core?, call: Call?) {
-        Timber.i("onCallCreated: ")
-    }
-
-    override fun onPublishStateChanged(lc: Core?, lev: Event?, state: PublishState?) {
-        Timber.i("onPublishStateChanged: publish state changed to $state for event name ${lev?.name}")
-    }
-
-    override fun onGlobalStateChanged(lc: Core?, gstate: GlobalState?, message: String?) {
-        Timber.i("onGlobalStateChanged: $gstate $message")
-        when (gstate) {
-            GlobalState.Configuring -> {
+    override fun globalState(lc: LinphoneCore?, globalState: LinphoneCore.GlobalState?, message: String?) {
+        Timber.i("onGlobalStateChanged: $globalState $message")
+        when (globalState?.toString()) {
+            "GlobalConfiguring" -> {
                 if (shouldReconfigure && lc != null) {
                     listener?.configuration?.let {
                         lc.configure(it)
@@ -85,9 +57,6 @@ class BridgeEventDispatcher : OptionalCoreListener, IBridgeEventDispatcher {
                 // do nothing
             }
         }
-    }
-
-    override fun onLogCollectionUploadStateChanged(lc: Core?, state: Core.LogCollectionUploadState?, info: String?) {
     }
 
 }

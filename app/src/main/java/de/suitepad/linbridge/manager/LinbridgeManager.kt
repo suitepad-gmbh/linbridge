@@ -5,12 +5,18 @@ import de.suitepad.linbridge.api.AudioConfiguration
 import de.suitepad.linbridge.api.core.*
 import org.linphone.core.*
 import timber.log.Timber
-import java.lang.IllegalStateException
 import java.util.*
+import org.linphone.core.LinphoneCoreException
+import org.linphone.core.LinphoneProxyConfig
+import org.linphone.core.LinphoneCore
+import org.linphone.core.LinphoneCoreFactory
+import org.linphone.core.LinphoneAddress
 
-class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener, IManager {
 
-    var registrationState: RegistrationState? = null
+
+class LinbridgeManager(context: Context, val core: LinphoneCore) : OptionalCoreListener, IManager {
+
+    var registrationState: LinphoneCore.RegistrationState? = null
     private var callEndReason: CallEndReason = CallEndReason.None
 
     val keepAliveTask = object : TimerTask() {
@@ -23,25 +29,22 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
 
     init {
         val baseDir = context.filesDir.absolutePath
-        core.rootCa = "$baseDir/rootca.pem"
-        core.ringback = "$baseDir/ringback.wav"
+        core.setRootCA("$baseDir/rootca.pem")
+        core.setRingback("$baseDir/ringback.wav")
         core.ring = "$baseDir/toymono.wav"
 
-        core.clearAllAuthInfo()
-        core.clearProxyConfig()
+        core.clearAuthInfos()
+        core.clearProxyConfigs()
         core.disableChat(Reason.NotImplemented)
-        core.enableVideoDisplay(false)
-        core.enableVideoCapture(false)
+        core.enableVideo(false, false)
         core.enableVideoMulticast(false)
-        core.enableVideoPreview(false)
+        core.enableVideoMulticast(false)
+        core.maxCalls = 1
 
         core.setUserAgent(BuildConfig.APPLICATION_ID, BuildConfig.VERSION_NAME)
-
-        Timber.i(core.config.dumpAsXml())
     }
 
     override fun start() {
-        core.start()
         iterate()
     }
 
@@ -61,23 +64,11 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
     }
 
     override fun authenticate(host: String, port: Int, username: String, password: String, proxy: String?) {
-        core.clearProxyConfig()
-        core.clearAllAuthInfo()
+        core.clearProxyConfigs()
+        core.clearAuthInfos()
 
         val sipAddress = "sip:$username@$host:$port"
-        val address: Address = try {
-            core.createAddress(sipAddress)
-        } catch (e: IllegalStateException) {
-            Timber.e(e, "couldn't connect using \"$sipAddress\"")
-            clearCredentials()
-            return
-        }
 
-        val authenticationInfo = core.createAuthInfo(address.username, null,
-                password, null, null, address.domain)
-        core.addAuthInfo(authenticationInfo)
-
-        val proxyConfig = core.createProxyConfig()
         var sipProxy = "sip:"
         if (proxy.isNullOrBlank()) {
             sipProxy += host
@@ -89,47 +80,43 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
                 sipProxy = proxy
             }
         }
-        val proxyAddress: Address = core.createAddress(sipProxy)
-        proxyAddress.transport = TransportType.Udp
-        proxyConfig.enableRegister(true)
-        proxyConfig.serverAddr = proxyAddress.asStringUriOnly()
-        proxyConfig.identityAddress = address
-        proxyConfig.route = null
-        proxyConfig.avpfMode = AVPFMode.Enabled
-        proxyConfig.avpfRrInterval = 0
-        proxyConfig.enableQualityReporting(false)
-        proxyConfig.qualityReportingCollector = null
-        proxyConfig.qualityReportingInterval = 0
+        val proxyAddress: LinphoneAddress = LinphoneCoreFactory.instance().createLinphoneAddress(sipProxy)
+        proxyAddress.transport = LinphoneAddress.TransportType.LinphoneTransportUdp
 
-        core.addProxyConfig(proxyConfig)
-        core.defaultProxyConfig = proxyConfig
-        core.refreshRegisters()
+        try {
+            val address = LinphoneCoreFactory.instance().createLinphoneAddress(sipAddress)
+            val auth = LinphoneCoreFactory.instance().createAuthInfo(username, password, null, address.domain)
+            core.clearAuthInfos()
+            core.addAuthInfo(auth)
+
+            val proxycon = core.createProxyConfig(address.asStringUriOnly(), proxyAddress.toString(), null, true)
+            core.clearProxyConfigs()
+            core.addProxyConfig(proxycon)
+            proxycon.done()
+            core.setDefaultProxyConfig(proxycon)
+            core.refreshRegisters()
+        } catch (e: LinphoneCoreException) {
+            Timber.e(e)
+        }
+
     }
 
     override fun clearCredentials() {
-        core.clearProxyConfig()
-        core.clearAllAuthInfo()
+        core.clearProxyConfigs()
+        core.clearAuthInfos()
         core.refreshRegisters()
     }
 
     override fun call(destination: String): CallError? {
-        if (!core.isNetworkReachable) {
-            return CallError.NetworkUnreachable
-        }
-
         if (!isRegistered()) {
             return CallError.NotAuthenticated
         }
 
-        if (core.inCall()) {
-            return CallError.AlreadyInCall
+        if (destination.startsWith("<sip") || destination.startsWith("sip")) {
+            core.invite(destination)
+        } else {
+            core.invite(destination)
         }
-
-        val address = if (destination.startsWith("<sip") || destination.startsWith("sip"))
-            destination
-        else "sip:$destination@${core.defaultProxyConfig.domain}"
-
-        core.invite(address)
         return null
     }
 
@@ -138,7 +125,7 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
             return CallError.NoCallAvailable
         }
 
-        core.currentCall.accept()
+        core.acceptCall(core.currentCall)
         return null
     }
 
@@ -147,18 +134,18 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
             return CallError.NoCallAvailable
         }
 
-        core.currentCall.terminate()
+        core.terminateAllCalls()
         return null
     }
 
-    fun isRegistered(): Boolean = registrationState == RegistrationState.Ok
+    fun isRegistered(): Boolean = registrationState == LinphoneCore.RegistrationState.RegistrationOk
 
     override fun getCurrentAuthenticationState(): AuthenticationState? {
         return when (registrationState) {
-            RegistrationState.Progress -> AuthenticationState.Progress
-            RegistrationState.Ok -> AuthenticationState.Ok
-            RegistrationState.Cleared -> AuthenticationState.Cleared
-            RegistrationState.Failed -> AuthenticationState.Failed
+            LinphoneCore.RegistrationState.RegistrationProgress -> AuthenticationState.Progress
+            LinphoneCore.RegistrationState.RegistrationOk -> AuthenticationState.Ok
+            LinphoneCore.RegistrationState.RegistrationCleared -> AuthenticationState.Cleared
+            LinphoneCore.RegistrationState.RegistrationFailed -> AuthenticationState.Failed
             else -> null
         }
     }
@@ -168,17 +155,17 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
     }
 
     override fun getCurrentCredentials(): Credentials? {
-        if (core.authInfoList.isEmpty()) {
+        if (core.authInfosList.isEmpty()) {
             return null
         }
-        val info = core.authInfoList[0]
+        val info = core.authInfosList[0]
         val proxy = core.defaultProxyConfig
         return Credentials(
                 info.domain.substringBefore(':'),
                 info.domain.substringAfter(':').toIntOrNull() ?: 5060,
                 info.username,
                 info.password,
-                proxy?.serverAddr
+                proxy?.address?.asStringUriOnly()
         )
     }
 
@@ -189,7 +176,7 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
     override fun sendDtmf(number: Char) {
         core.stopDtmf()
         core.playDtmf(number, -1)
-        core.currentCall?.sendDtmf(number)
+        core.sendDtmf(number)
     }
 
     override fun stopDtmf() {
@@ -197,7 +184,7 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
     }
 
     override fun mute(muted: Boolean) {
-        core.enableMic(!muted)
+        core.muteMic(muted)
     }
 
     override fun getCurrentCallDuration(): Int {
@@ -205,12 +192,11 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
     }
 
     //<editor-fold desc="CoreListener">
-    override fun onRegistrationStateChanged(lc: Core?, cfg: ProxyConfig?, cstate: RegistrationState?, message: String?) {
+    override fun registrationState(p0: LinphoneCore?, p1: LinphoneProxyConfig?, cstate: LinphoneCore.RegistrationState?, p3: String?) {
         registrationState = cstate
     }
 
-    override fun onCallStateChanged(lc: Core?, call: Call?, cstate: Call.State?, message: String?) {
-        super.onCallStateChanged(lc, call, cstate, message)
+    override fun callState(core: LinphoneCore?, call: LinphoneCall?, cstate: LinphoneCall.State?, message: String?) {
         callEndReason = call?.reason?.toString()?.let { CallEndReason.valueOf(it) } ?: CallEndReason.None
     }
 
@@ -218,9 +204,9 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
 
 }
 
-fun Core.configure(settings: AudioConfiguration) {
-    micGainDb = settings.microphoneGain.toFloat()
-    playbackGainDb = settings.speakerGain.toFloat()
+fun LinphoneCore.configure(settings: AudioConfiguration) {
+    setMicrophoneGain(settings.microphoneGain.toFloat())
+    playbackGain = settings.speakerGain.toFloat()
     enableEchoCancellation(settings.echoCancellation)
     enableEchoLimiter(settings.echoLimiter)
     config.setInt("sound", "el_sustain", settings.echoLimiterSustain)
@@ -231,29 +217,28 @@ fun Core.configure(settings: AudioConfiguration) {
     config.setBool("misc", "add_missing_audio_codecs", settings.enabledCodecs.isEmpty())
     enableCodecs(settings.enabledCodecs)
     config.sync()
-    Timber.v(config.dump())
 }
 
-fun Core.enableCodecs(types: Array<AudioCodec>?) {
-    audioPayloadTypes.forEach { payloadType ->
-        val audioCodec = AudioCodec.getAudioCodecByMimeAndRate(payloadType.mimeType, payloadType.clockRate)
-        payloadType.enable((types.isNullOrEmpty() && audioCodec != null) || //  if not specifying codecs to open and the codec is supported by bell
-                types?.contains(audioCodec) ?: false) // if codec is in the enabled codecs list
+fun LinphoneCore.enableCodecs(types: Array<AudioCodec>?) {
+    audioCodecs.forEach { payloadType ->
+        val audioCodec = AudioCodec.getAudioCodecByMimeAndRate(payloadType.mime, payloadType.rate)
+        enablePayloadType(payloadType, types.isNullOrEmpty() && audioCodec != null //  if not specifying codecs to open and the codec is supported by bell
+                || types?.contains(audioCodec) ?: false) // if codec is in the enabled codecs list
     }
 }
 
-fun Core.getEnabledCodecs(): Array<AudioCodec>? {
-    return audioPayloadTypes.filter { it.enabled() }.mapNotNull {
-        AudioCodec.getAudioCodecByMimeAndRate(it.mimeType, it.clockRate)
+fun LinphoneCore.getEnabledCodecs(): Array<AudioCodec>? {
+    return audioCodecs.filter { isPayloadTypeEnabled(it) }.mapNotNull {
+        AudioCodec.getAudioCodecByMimeAndRate(it.mime, it.rate)
     }.toTypedArray()
 }
 
-fun Core.getConfiguration(): AudioConfiguration {
+fun LinphoneCore.getConfiguration(): AudioConfiguration {
     return AudioConfiguration().also {
-        it.microphoneGain = micGainDb.toInt()
-        it.speakerGain = playbackGainDb.toInt()
-        it.echoCancellation = echoCancellationEnabled()
-        it.echoLimiter = echoLimiterEnabled()
+        it.microphoneGain = 0 // TODO: fix this
+        it.speakerGain = playbackGain.toInt()
+        it.echoCancellation = isEchoCancellationEnabled
+        it.echoLimiter = isEchoLimiterEnabled
         it.echoLimiterSustain = config.getInt("sound", "el_sustain", 0)
         it.echoLimiterSpeakerThreshold = config.getFloat("sound", "el_thres", 0f)
         it.echoLimiterMicrophoneDecrease = config.getInt("sound", "el_force", 0)

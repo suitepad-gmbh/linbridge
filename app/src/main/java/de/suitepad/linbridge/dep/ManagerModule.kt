@@ -10,9 +10,8 @@ import de.suitepad.linbridge.manager.IManager
 import de.suitepad.linbridge.logger.LinbridgeEventLogger
 import de.suitepad.linbridge.logger.LogCatcher
 import de.suitepad.linbridge.manager.LinbridgeManager
-import org.linphone.core.Core
-import org.linphone.core.Factory
-import org.linphone.core.LoggingServiceListener
+import org.linphone.core.LinphoneCore
+import org.linphone.core.LinphoneCoreFactory
 import javax.inject.Named
 
 @Module(includes = [BridgeModule::class])
@@ -20,7 +19,7 @@ class ManagerModule(val debug: Boolean) {
 
     @Provides
     @BridgeServiceComponent.BridgeServiceScope
-    fun provideManager(context: Context, core: Core, logger: LinbridgeEventLogger): IManager {
+    fun provideManager(context: Context, core: LinphoneCore, logger: LinbridgeEventLogger): IManager {
         val linphoneManager = LinbridgeManager(context, core)
         linphoneManager.core.addListener(linphoneManager)
         linphoneManager.core.addListener(logger)
@@ -31,12 +30,10 @@ class ManagerModule(val debug: Boolean) {
     @BridgeServiceComponent.BridgeServiceScope
     fun provideCore(
             linphoneCoreListener: BridgeEventDispatcher,
-            factory: Factory,
+            factory: LinphoneCoreFactory,
             context: Context
-    ): Core {
-        return factory.createCore("${context.filesDir.absolutePath}/linphonerc", "${context.filesDir.absolutePath}/linphonerc", context).apply {
-            addListener(linphoneCoreListener)
-        }
+    ): LinphoneCore {
+        return factory.createLinphoneCore(linphoneCoreListener, "${context.filesDir.absolutePath}/linphonerc", "${context.filesDir.absolutePath}/linphonerc", null, context)
     }
 
     @Provides
@@ -51,10 +48,10 @@ class ManagerModule(val debug: Boolean) {
 
     @Provides
     @BridgeServiceComponent.BridgeServiceScope
-    fun provideCoreFactory(@DebugFlag debug: Boolean, loggingServiceListener: LogCatcher): Factory {
-        return Factory.instance().apply {
+    fun provideCoreFactory(@DebugFlag debug: Boolean, loggingServiceListener: LogCatcher):LinphoneCoreFactory {
+        return LinphoneCoreFactory.instance().apply {
             setDebugMode(debug, "LibLinphone")
-            this.loggingService.setListener(loggingServiceListener)
+            this.setLogHandler(loggingServiceListener)
         }
     }
 

@@ -1,146 +1,107 @@
 package de.suitepad.linbridge.manager
 
 import org.linphone.core.*
+import java.nio.ByteBuffer
 
-interface OptionalCoreListener : CoreListener {
+interface OptionalCoreListener : LinphoneCoreListener {
 
-    override fun onTransferStateChanged(lc: Core?, transfered: Call?, newCallState: Call.State?) {
-
+    override fun authInfoRequested(p0: LinphoneCore?, p1: String?, p2: String?, p3: String?) {
     }
 
-    override fun onFriendListCreated(lc: Core?, list: FriendList?) {
-
+    override fun callEncryptionChanged(p0: LinphoneCore?, p1: LinphoneCall?, p2: Boolean, p3: String?) {
     }
 
-    override fun onSubscriptionStateChanged(lc: Core?, lev: Event?, state: SubscriptionState?) {
+    override fun displayMessage(p0: LinphoneCore?, p1: String?) {
     }
 
-    override fun onCallLogUpdated(lc: Core?, newcl: CallLog?) {
-
+    override fun newSubscriptionRequest(p0: LinphoneCore?, p1: LinphoneFriend?, p2: String?) {
     }
 
-    override fun onCallStateChanged(lc: Core?, call: Call?, cstate: Call.State?, message: String?) {
-
+    override fun callStatsUpdated(p0: LinphoneCore?, p1: LinphoneCall?, p2: LinphoneCallStats?) {
     }
 
-    override fun onAuthenticationRequested(lc: Core?, authInfo: AuthInfo?, method: AuthMethod?) {
-
+    override fun isComposingReceived(p0: LinphoneCore?, p1: LinphoneChatRoom?) {
     }
 
-    override fun onNotifyPresenceReceivedForUriOrTel(lc: Core?, lf: Friend?, uriOrTel: String?, presenceModel: PresenceModel?) {
-
+    override fun fileTransferSend(p0: LinphoneCore?, p1: LinphoneChatMessage?, p2: LinphoneContent?, p3: ByteBuffer?, p4: Int): Int {
+        return 0
     }
 
-    override fun onChatRoomStateChanged(lc: Core?, cr: ChatRoom?, state: ChatRoom.State?) {
-
+    override fun configuringStatus(p0: LinphoneCore?, p1: LinphoneCore.RemoteProvisioningState?, p2: String?) {
     }
 
-    override fun onBuddyInfoUpdated(lc: Core?, lf: Friend?) {
-
+    override fun fileTransferProgressIndication(p0: LinphoneCore?, p1: LinphoneChatMessage?, p2: LinphoneContent?, p3: Int) {
     }
 
-    override fun onNetworkReachable(lc: Core?, reachable: Boolean) {
-
+    override fun notifyReceived(p0: LinphoneCore?, p1: LinphoneCall?, p2: LinphoneAddress?, p3: ByteArray?) {
     }
 
-    override fun onNotifyReceived(lc: Core?, lev: Event?, notifiedEvent: String?, body: Content?) {
-
+    override fun notifyReceived(p0: LinphoneCore?, p1: LinphoneEvent?, p2: String?, p3: LinphoneContent?) {
     }
 
-    override fun onNewSubscriptionRequested(lc: Core?, lf: Friend?, url: String?) {
-
+    override fun displayStatus(p0: LinphoneCore?, p1: String?) {
     }
 
-    override fun onRegistrationStateChanged(lc: Core?, cfg: ProxyConfig?, cstate: RegistrationState?, message: String?) {
-
+    override fun authenticationRequested(p0: LinphoneCore?, p1: LinphoneAuthInfo?, p2: LinphoneCore.AuthMethod?) {
     }
 
-    override fun onNotifyPresenceReceived(lc: Core?, lf: Friend?) {
-
+    override fun infoReceived(p0: LinphoneCore?, p1: LinphoneCall?, p2: LinphoneInfoMessage?) {
     }
 
-    override fun onEcCalibrationAudioInit(lc: Core?) {
-
+    override fun notifyPresenceReceived(p0: LinphoneCore?, p1: LinphoneFriend?) {
     }
 
-    override fun onMessageReceived(lc: Core?, room: ChatRoom?, message: ChatMessage?) {
-
+    override fun friendListCreated(p0: LinphoneCore?, p1: LinphoneFriendList?) {
     }
 
-    override fun onEcCalibrationResult(lc: Core?, status: EcCalibratorStatus?, delayMs: Int) {
-
+    override fun registrationState(p0: LinphoneCore?, p1: LinphoneProxyConfig?, p2: LinphoneCore.RegistrationState?, p3: String?) {
     }
 
-    override fun onSubscribeReceived(lc: Core?, lev: Event?, subscribeEvent: String?, body: Content?) {
-
+    override fun dtmfReceived(p0: LinphoneCore?, p1: LinphoneCall?, p2: Int) {
     }
 
-    override fun onInfoReceived(lc: Core?, call: Call?, msg: InfoMessage?) {
-
+    override fun messageReceived(p0: LinphoneCore?, p1: LinphoneChatRoom?, p2: LinphoneChatMessage?) {
     }
 
-    override fun onCallStatsUpdated(lc: Core?, call: Call?, stats: CallStats?) {
-
+    override fun transferState(p0: LinphoneCore?, p1: LinphoneCall?, p2: LinphoneCall.State?) {
     }
 
-    override fun onFriendListRemoved(lc: Core?, list: FriendList?) {
-
+    override fun friendListRemoved(p0: LinphoneCore?, p1: LinphoneFriendList?) {
     }
 
-    override fun onReferReceived(lc: Core?, referTo: String?) {
-
+    override fun subscriptionStateChanged(p0: LinphoneCore?, p1: LinphoneEvent?, p2: SubscriptionState?) {
     }
 
-    override fun onQrcodeFound(lc: Core?, result: String?) {
-
+    override fun show(p0: LinphoneCore?) {
     }
 
-    override fun onConfiguringStatus(lc: Core?, status: ConfiguringState?, message: String?) {
-
+    override fun callState(p0: LinphoneCore?, p1: LinphoneCall?, p2: LinphoneCall.State?, p3: String?) {
     }
 
-    override fun onCallCreated(lc: Core?, call: Call?) {
-
+    override fun messageReceivedUnableToDecrypted(p0: LinphoneCore?, p1: LinphoneChatRoom?, p2: LinphoneChatMessage?) {
     }
 
-    override fun onPublishStateChanged(lc: Core?, lev: Event?, state: PublishState?) {
-
+    override fun ecCalibrationStatus(p0: LinphoneCore?, p1: LinphoneCore.EcCalibratorStatus?, p2: Int, p3: Any?) {
     }
 
-    override fun onCallEncryptionChanged(lc: Core?, call: Call?, on: Boolean, authenticationToken: String?) {
-
+    override fun uploadProgressIndication(p0: LinphoneCore?, p1: Int, p2: Int) {
     }
 
-    override fun onIsComposingReceived(lc: Core?, room: ChatRoom?) {
-
+    override fun networkReachableChanged(p0: LinphoneCore?, p1: Boolean) {
     }
 
-    override fun onMessageReceivedUnableDecrypt(lc: Core?, room: ChatRoom?, message: ChatMessage?) {
-
+    override fun displayWarning(p0: LinphoneCore?, p1: String?) {
     }
 
-    override fun onLogCollectionUploadProgressIndication(lc: Core?, offset: Int, total: Int) {
-
+    override fun globalState(p0: LinphoneCore?, p1: LinphoneCore.GlobalState?, p2: String?) {
     }
 
-    override fun onVersionUpdateCheckResultReceived(lc: Core?, result: VersionUpdateCheckResult?, version: String?, url: String?) {
-
+    override fun uploadStateChanged(p0: LinphoneCore?, p1: LinphoneCore.LogCollectionUploadState?, p2: String?) {
     }
 
-    override fun onEcCalibrationAudioUninit(lc: Core?) {
-
+    override fun fileTransferRecv(p0: LinphoneCore?, p1: LinphoneChatMessage?, p2: LinphoneContent?, p3: ByteArray?, p4: Int) {
     }
 
-    override fun onGlobalStateChanged(lc: Core?, gstate: GlobalState?, message: String?) {
-
+    override fun publishStateChanged(p0: LinphoneCore?, p1: LinphoneEvent?, p2: PublishState?) {
     }
-
-    override fun onLogCollectionUploadStateChanged(lc: Core?, state: Core.LogCollectionUploadState?, info: String?) {
-
-    }
-
-    override fun onDtmfReceived(lc: Core?, call: Call?, dtmf: Int) {
-
-    }
-
 }

@@ -5,7 +5,6 @@ import dagger.Module
 import dagger.Provides
 import de.suitepad.linbridge.BridgeApplication
 import de.suitepad.linbridge.logger.LogCatcher
-import org.linphone.core.LoggingServiceListener
 import javax.inject.Scope
 
 @Component(modules = [AppModule::class])

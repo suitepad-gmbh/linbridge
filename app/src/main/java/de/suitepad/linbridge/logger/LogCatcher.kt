@@ -5,9 +5,7 @@ import android.util.Log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.linphone.core.LogLevel
-import org.linphone.core.LoggingService
-import org.linphone.core.LoggingServiceListener
+import org.linphone.core.LinphoneLogHandler
 import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.*
@@ -16,7 +14,8 @@ import kotlin.coroutines.CoroutineContext
 @SuppressLint("SimpleDateFormat")
 private val simpleDateFormat = SimpleDateFormat("MM-dd HH:mm:ss")
 
-class LogCatcher : Timber.Tree(), LoggingServiceListener, CoroutineScope {
+class LogCatcher : Timber.Tree(), LinphoneLogHandler, CoroutineScope {
+
 
     companion object {
         const val LOG_SIZE = 250
@@ -81,7 +80,7 @@ class LogCatcher : Timber.Tree(), LoggingServiceListener, CoroutineScope {
     class LogEntry(var date: Date, val priority: Int, val tag: String?, val message: String, var t: Throwable?, var count: Int = 1) {
 
         fun getStyledText(): String {
-            var result = if (count>1) "<font color=\"red\">[x$count]</font>" else ""
+            var result = if (count > 1) "<font color=\"red\">[x$count]</font>" else ""
             if (!message.isBlank()) {
                 result += getColoredText(getColor(priority), date, tag, message)
             }
@@ -93,7 +92,7 @@ class LogCatcher : Timber.Tree(), LoggingServiceListener, CoroutineScope {
 
         private fun getColoredText(color: String, date: Date, tag: String?, message: String): String {
             return message.lines().foldIndexed("<font color=\"$color\">${simpleDateFormat.format(date)} ") { index, acc, c ->
-                "${if (tag != null) "[$tag] " else ""}$acc$c${if (index == message.lines().size-1) "" else LINE_BREAK}"
+                "${if (tag != null) "[$tag] " else ""}$acc$c${if (index == message.lines().size - 1) "" else LINE_BREAK}"
             } + "</font>$EXTERNAL_LINE_BREAK"
         }
 
@@ -130,8 +129,19 @@ class LogCatcher : Timber.Tree(), LoggingServiceListener, CoroutineScope {
 
     }
 
-    override fun onLogMessageWritten(p0: LoggingService?, p1: String?, p2: LogLevel?, p3: String?) {
-        Timber.tag(p1).log(p2?.toInt() ?: Log.INFO, p3)
+    override fun log(loggerName: String?, logLevel: Int, logLevelString: String?, message: String?, exception: Throwable?) {
+        Timber.tag(loggerName).log(when (logLevel) {
+            LinphoneLogHandler.Debug -> Log.DEBUG
+            LinphoneLogHandler.Error -> Log.ERROR
+            LinphoneLogHandler.Fatal -> Log.ERROR
+            LinphoneLogHandler.Info -> Log.INFO
+            LinphoneLogHandler.Trace -> Log.INFO
+            LinphoneLogHandler.Warn -> Log.WARN
+            else -> Log.VERBOSE
+        }, message)
+        if (exception != null) {
+            Timber.tag(loggerName).log(Log.ERROR, exception)
+        }
     }
 
     interface LogListener {
