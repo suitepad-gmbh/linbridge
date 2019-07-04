@@ -1,4 +1,7 @@
 # CHANGELOG
+### 1.3.2.rc1
+- FIX: disable AVPF by default
+
 ### 1.3.1
 - FEAT: rebuild using new google firebase api key
 
