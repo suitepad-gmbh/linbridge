@@ -95,14 +95,14 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
         proxyConfig.serverAddr = proxyAddress.asStringUriOnly()
         proxyConfig.identityAddress = address
         proxyConfig.route = null
-        proxyConfig.avpfMode = AVPFMode.Enabled
-        proxyConfig.avpfRrInterval = 0
         proxyConfig.enableQualityReporting(false)
         proxyConfig.qualityReportingCollector = null
         proxyConfig.qualityReportingInterval = 0
+        proxyConfig.avpfMode = AVPFMode.Disabled
 
         core.addProxyConfig(proxyConfig)
         core.defaultProxyConfig = proxyConfig
+        core.avpfMode = AVPFMode.Disabled
         core.refreshRegisters()
     }
 
