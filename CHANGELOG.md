@@ -1,5 +1,5 @@
 # CHANGELOG
-### 1.3.2.rc1
+### 1.3.2
 - FIX: disable AVPF by default
 
 ### 1.3.1
