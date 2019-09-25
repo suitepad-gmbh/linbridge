@@ -1,4 +1,8 @@
 # CHANGELOG
+### 1.3.3.rc1
+- CHORE: upgrade binbridge-api v1.0.1
+  - FEAT: add G722 audio codec
+
 ### 1.3.2
 - FIX: disable AVPF by default
 
