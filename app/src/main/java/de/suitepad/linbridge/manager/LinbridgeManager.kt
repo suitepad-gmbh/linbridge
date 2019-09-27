@@ -9,10 +9,9 @@ import java.lang.IllegalStateException
 import java.util.*
 
 class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener, IManager {
-
     var registrationState: RegistrationState? = null
-    private var callEndReason: CallEndReason = CallEndReason.None
 
+    private var callEndReason: CallEndReason = CallEndReason.None
     val keepAliveTask = object : TimerTask() {
         override fun run() {
             core.iterate()
@@ -198,6 +197,10 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
 
     override fun mute(muted: Boolean) {
         core.enableMic(!muted)
+    }
+
+    override fun isMuted(): Boolean {
+        return !core.micEnabled()
     }
 
     override fun getCurrentCallDuration(): Int {

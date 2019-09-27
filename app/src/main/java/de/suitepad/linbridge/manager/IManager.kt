@@ -52,6 +52,8 @@ interface IManager {
 
     fun mute(muted: Boolean)
 
+    fun isMuted(): Boolean
+
     fun getCurrentCallDuration(): Int
 
     fun getCurrentConfiguration(): AudioConfiguration

@@ -170,6 +170,10 @@ class BridgeService : Service(), IBridgeService {
         linphoneManager.mute(muted)
     }
 
+    override fun isMuted(): Boolean {
+        return linphoneManager.isMuted()
+    }
+
     override fun getCurrentCallDuration(): Int {
         return linphoneManager.getCurrentCallDuration()
     }
