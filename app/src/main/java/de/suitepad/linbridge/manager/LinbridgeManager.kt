@@ -9,6 +9,11 @@ import java.lang.IllegalStateException
 import java.util.*
 
 class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener, IManager {
+
+    companion object {
+        const val DEFAULT_RINGTONE = "/data/user/0/de.suitepad.linbridge/files/share/sounds/linphone/rings/notes_of_the_optimistic.mkv"
+    }
+
     var registrationState: RegistrationState? = null
 
     private var callEndReason: CallEndReason = CallEndReason.None
@@ -24,7 +29,6 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
         val baseDir = context.filesDir.absolutePath
         core.rootCa = "$baseDir/rootca.pem"
         core.ringback = "$baseDir/ringback.wav"
-        core.ring = "$baseDir/toymono.wav"
 
         core.clearAllAuthInfo()
         core.clearProxyConfig()
@@ -57,6 +61,12 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
 
     override fun configure(settings: AudioConfiguration) {
         core.configure(settings)
+        // todo: this is just a migration step, replace this with always null ringtone in init code
+        if (settings.shouldNotRing) {
+            core.ring = null
+        } else {
+            core.ring = DEFAULT_RINGTONE
+        }
     }
 
     override fun authenticate(host: String, port: Int, username: String, password: String, proxy: String?) {
