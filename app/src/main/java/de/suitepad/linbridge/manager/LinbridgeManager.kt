@@ -10,13 +10,10 @@ import java.util.*
 
 class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener, IManager {
 
-    companion object {
-        const val DEFAULT_RINGTONE = "/data/user/0/de.suitepad.linbridge/files/share/sounds/linphone/rings/notes_of_the_optimistic.mkv"
-    }
-
     var registrationState: RegistrationState? = null
 
     private var callEndReason: CallEndReason = CallEndReason.None
+
     val keepAliveTask = object : TimerTask() {
         override fun run() {
             core.iterate()
@@ -25,10 +22,13 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
 
     var keepAliveTimer: Timer? = null
 
+    val defaultRingtonePath: String
+
     init {
         val baseDir = context.filesDir.absolutePath
         core.rootCa = "$baseDir/rootca.pem"
         core.ringback = "$baseDir/ringback.wav"
+        defaultRingtonePath = "$baseDir/toymono.wav"
         core.ring = null
 
         core.clearAllAuthInfo()
@@ -66,7 +66,7 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
         if (settings.shouldNotRing) {
             core.ring = null
         } else {
-            core.ring = DEFAULT_RINGTONE
+            core.ring = defaultRingtonePath
         }
     }
 
