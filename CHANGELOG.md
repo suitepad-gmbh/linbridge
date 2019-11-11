@@ -1,4 +1,7 @@
 # CHANGELOG
+### 1.4.1
+- CHORE: revert to old ringtone if linbridge will ring
+
 ### 1.4.0
 - FEAT: can be configured to stop ringing by client app \
 this is just a migration step and linphone should never be responsible ringing
