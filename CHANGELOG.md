@@ -1,4 +1,8 @@
 # CHANGELOG
+### 1.4.0
+- FEAT: can be configured to stop ringing by client app \
+this is just a migration step and linphone should never be responsible ringing
+
 ### 1.3.3.rc2
 - FEAT: get muting state
 
