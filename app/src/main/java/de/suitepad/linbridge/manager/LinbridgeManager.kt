@@ -70,7 +70,7 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
         }
     }
 
-    override fun authenticate(host: String, port: Int, username: String, password: String, proxy: String?) {
+    override fun authenticate(host: String, port: Int, authId: String?, username: String, password: String, proxy: String?) {
         core.clearProxyConfig()
         core.clearAllAuthInfo()
 
@@ -83,7 +83,7 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
             return
         }
 
-        val authenticationInfo = core.createAuthInfo(address.username, null,
+        val authenticationInfo = core.createAuthInfo(address.username, authId,
                 password, null, null, address.domain)
         core.addAuthInfo(authenticationInfo)
 
@@ -188,7 +188,8 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
                 info.domain.substringAfter(':').toIntOrNull() ?: 5060,
                 info.username,
                 info.password,
-                proxy?.serverAddr
+                proxy?.serverAddr,
+                info.userid
         )
     }
 

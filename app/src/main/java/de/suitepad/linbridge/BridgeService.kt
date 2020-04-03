@@ -103,6 +103,7 @@ class BridgeService : Service(), IBridgeService {
             linphoneManager.authenticate(
                     credentials.host,
                     if (credentials.port == 0) 5060 else credentials.port,
+                    credentials.authId,
                     credentials.username,
                     credentials.password,
                     credentials.proxy
