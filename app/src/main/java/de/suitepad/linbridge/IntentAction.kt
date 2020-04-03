@@ -8,6 +8,7 @@ const val EXTRA_SIP_USERNAME = "USERNAME"
 const val EXTRA_SIP_PASSWORD = "PASSWORD"
 const val EXTRA_SIP_PORT = "PORT"
 const val EXTRA_SIP_PROXY = "PROXY"
+const val EXTRA_SIP_AUTHID = "AUTHID"
 
 const val EXTRA_MICROPHONE_GAIN = "MICROPHONE_GAIN"
 const val EXTRA_SPEAKER_GAIN = "SPEAKER_GAIN"
@@ -36,7 +37,8 @@ enum class IntentAction(val routine: (bridge: IBridgeService, bundle: Bundle?) -
                 bundle?.getInt(EXTRA_SIP_PORT, 5060) ?: 5060,
                 bundle?.getString(EXTRA_SIP_USERNAME),
                 bundle?.getString(EXTRA_SIP_PASSWORD),
-                bundle?.getString(EXTRA_SIP_PROXY)
+                bundle?.getString(EXTRA_SIP_PROXY),
+                bundle?.getString(EXTRA_SIP_AUTHID)
         ))
     }),
     CALL({ bridge, bundle ->

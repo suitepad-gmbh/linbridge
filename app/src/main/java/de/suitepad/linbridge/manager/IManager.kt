@@ -34,7 +34,7 @@ interface IManager {
      * @param password SIP account password used for authentication
      * @param proxy [optional] proxy server address
      */
-    fun authenticate(host: String, port: Int = 5060, username: String, password: String, proxy: String?)
+    fun authenticate(host: String, port: Int = 5060, authId: String?, username: String, password: String, proxy: String?)
 
     fun call(destination: String): CallError?
 
