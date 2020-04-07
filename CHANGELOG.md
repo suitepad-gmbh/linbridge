@@ -1,4 +1,7 @@
 # CHANGELOG
+### 1.5.0
+- FEAT: add support for sip_auth_id if available
+
 ### 1.4.1
 - CHORE: revert to old ringtone if linbridge will ring
 
