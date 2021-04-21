@@ -1,10 +1,8 @@
 package de.suitepad.linbridge
 
-import android.content.DialogInterface
-import android.support.v7.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.support.v4.app.DialogFragment
-import android.support.v7.app.AlertDialog
+import androidx.appcompat.app.AlertDialog
 import android.text.Html
 import android.view.View
 import android.widget.Toast
@@ -14,7 +12,6 @@ import de.suitepad.linbridge.logger.LogCatcher
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.dialog_sendlogs.view.*
 import kotlinx.coroutines.*
-import timber.log.Timber
 
 class MainActivity : AppCompatActivity(), LogCatcher.LogListener {
 
