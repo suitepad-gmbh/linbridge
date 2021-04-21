@@ -5,7 +5,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.*
-import com.crashlytics.android.Crashlytics
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import de.suitepad.linbridge.api.ILinbridgeListener
 import de.suitepad.linbridge.api.AudioConfiguration
 import de.suitepad.linbridge.api.core.AuthenticationState
@@ -95,11 +95,11 @@ class BridgeService : Service(), IBridgeService {
                 credentials.host == null ||
                 credentials.username == null ||
                 credentials.password == null) {
-            Crashlytics.getInstance().core.setString("credentials", "None")
+            FirebaseCrashlytics.getInstance().setCustomKey("credentials", "None")
             linphoneManager.clearCredentials()
             return
         } else {
-            Crashlytics.getInstance().core.setString("credentials", "sip:${credentials.username}@${credentials.host}")
+            FirebaseCrashlytics.getInstance().setCustomKey("credentials", "sip:${credentials.username}@${credentials.host}")
             linphoneManager.authenticate(
                     credentials.host,
                     if (credentials.port == 0) 5060 else credentials.port,
@@ -184,7 +184,9 @@ class BridgeService : Service(), IBridgeService {
     }
 
     override fun setUserId(id: String?) {
-        Crashlytics.getInstance().core.setUserIdentifier(id)
+        if (id != null) {
+            FirebaseCrashlytics.getInstance().setUserId(id)
+        }
     }
 
     fun copyIfNotExists(context: Context, resource: Int, target: String) {
