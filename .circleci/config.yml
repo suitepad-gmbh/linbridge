@@ -7,7 +7,7 @@ jobs:
   build:
     working_directory: ~/linbridge
     docker:
-      - image: circleci/android:api-28-alpha
+      - image: circleci/android:api-29
 
     environment:
       JVM_OPTS: -Xmx3200m
@@ -71,7 +71,7 @@ jobs:
   test:
     working_directory: ~/linbridge
     docker:
-      - image: circleci/android:api-28-alpha
+      - image: circleci/android:api-29
 
     environment:
       JVM_OPTS: -Xmx3200m
@@ -153,7 +153,7 @@ jobs:
   release:
     working_directory: ~/linbridge
     docker:
-      - image: circleci/android:api-28-alpha
+      - image: circleci/android:api-29
 
     environment:
       JVM_OPTS: -Xmx3200m
