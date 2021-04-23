@@ -2,7 +2,9 @@
 #
 # Check https://circleci.com/docs/2.0/language-java/ for more details
 #
-version: 2
+version: 2.1
+orbs:
+  slack: circleci/slack@4.0.0
 jobs:
   build:
     working_directory: ~/linbridge
@@ -246,6 +248,47 @@ jobs:
             . release_tools/venv/bin/activate
             python release_tools/deploy.py --manifest /tmp/artifacts/release/output.json \
               --app-id $APPLICATION_ID --token $BACKEND_TOKEN --user-id $BACKEND_USER_ID
+  notify:
+    working_directory: ~/linbridge
+    docker:
+      - image: circleci/node:stretch
+    steps:
+      - checkout
+      - run:
+          name: Preparing slack notification
+          command: |
+            echo export CHANGELOG=\"$(git log -1 --pretty=%B | sed -z 's/\n/\\n/g')\" >> $BASH_ENV
+            echo export VERSION=$(git log -1 --pretty=%B | head -1) >> $BASH_ENV
+
+      - slack/notify:
+          custom: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                	"type": "plain_text",
+                	"text": ":slightly_smiling_face: Linbridge: new version $VERSION available for testing",
+                	"emoji": true
+                  }
+                },
+                {
+            	  "type": "section",
+            	  "text": {
+            		"type": "mrkdwn",
+            		"text": "@here *CHANGELOG:* $CHANGELOG \n\n<https://backend.suitepad.de/#/admin/933/admin_area/apps/357/versions/index|Download here>"
+            	  },
+            	  "accessory": {
+            		"type": "image",
+            		"image_url": "https://github.com/suitepad-gmbh/icons/raw/master/default_apk.png",
+            		"alt_text": "App icon"
+            	  }
+            	}
+              ]
+            }
+          channel: C01CUUG1UE5
+          branch_pattern: "()"
+          event: always
 
 workflows:
   version: 2
@@ -283,6 +326,16 @@ workflows:
           context: apk_deployment
           requires:
             - hold
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}.*/
+      - notify:
+          name: notify_slack
+          context: slack_notifier
+          requires:
+            - deploy
           filters:
             branches:
               ignore: /.*/
