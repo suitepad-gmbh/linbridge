@@ -64,10 +64,11 @@ class BridgeService : Service(), IBridgeService {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        var result = super.onStartCommand(intent, flags, startId)
-        intent?.let {
+        val result = super.onStartCommand(intent, flags, startId)
+        if (intent != null) {
             try {
-                IntentAction.valueOf(it.getStringExtra(EXTRA_ACTION)).routine.invoke(this, it.extras)
+                val action = intent.getStringExtra(EXTRA_ACTION) ?: throw IllegalArgumentException("action missing")
+                IntentAction.valueOf(action).routine.invoke(this, intent.extras)
             } catch (e: Exception) {
                 when (e) {
                     is IllegalArgumentException,
