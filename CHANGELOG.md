@@ -1,4 +1,9 @@
 # CHANGELOG
+### 1.5.1
+- FIX: crash reports not sent to crashlytics due to outdated firebase version
+- FIX: crash when starting service without providing an action
+- CHORE: migrate to androidx
+
 ### 1.5.0
 - FEAT: add support for sip_auth_id if available
 
