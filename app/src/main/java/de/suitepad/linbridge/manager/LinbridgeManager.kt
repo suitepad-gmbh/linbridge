@@ -71,21 +71,18 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
     }
 
     override fun authenticate(host: String, port: Int, authId: String?, username: String, password: String, proxy: String?) {
-        core.clearProxyConfig()
-        core.clearAllAuthInfo()
+        clearCredentials()
 
         val sipAddress = "sip:$username@$host:$port"
         val address: Address = try {
-            core.createAddress(sipAddress)
+            Factory.instance().createAddress(sipAddress)
         } catch (e: IllegalStateException) {
             Timber.e(e, "couldn't connect using \"$sipAddress\"")
             clearCredentials()
             return
         }
 
-        val authenticationInfo = core.createAuthInfo(address.username, authId,
-                password, null, null, address.domain)
-        core.addAuthInfo(authenticationInfo)
+        val authenticationInfo = Factory.instance().createAuthInfo(address.username, authId, password, null, null, address.domain)
 
         val proxyConfig = core.createProxyConfig()
         var sipProxy = "sip:"
@@ -99,17 +96,16 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
                 sipProxy = proxy
             }
         }
-        val proxyAddress: Address = core.createAddress(sipProxy)
+        val proxyAddress: Address = Factory.instance().createAddress(sipProxy)
         proxyAddress.transport = TransportType.Udp
+
         proxyConfig.enableRegister(true)
         proxyConfig.serverAddr = proxyAddress.asStringUriOnly()
         proxyConfig.identityAddress = address
-        proxyConfig.route = null
         proxyConfig.enableQualityReporting(false)
-        proxyConfig.qualityReportingCollector = null
-        proxyConfig.qualityReportingInterval = 0
         proxyConfig.avpfMode = AVPFMode.Disabled
 
+        core.addAuthInfo(authenticationInfo)
         core.addProxyConfig(proxyConfig)
         core.defaultProxyConfig = proxyConfig
         core.avpfMode = AVPFMode.Disabled
@@ -117,9 +113,10 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
     }
 
     override fun clearCredentials() {
+        val account = core.defaultProxyConfig ?: return
+        account.enableRegister(false)
         core.clearProxyConfig()
         core.clearAllAuthInfo()
-        core.refreshRegisters()
     }
 
     override fun call(destination: String): CallError? {
