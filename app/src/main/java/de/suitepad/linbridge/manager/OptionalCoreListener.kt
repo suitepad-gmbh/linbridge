@@ -143,4 +143,12 @@ interface OptionalCoreListener : CoreListener {
 
     }
 
+    override fun onChatRoomRead(p0: Core?, p1: ChatRoom?) {
+    }
+
+    override fun onChatRoomSubjectChanged(p0: Core?, p1: ChatRoom?) {
+    }
+
+    override fun onMessageSent(p0: Core?, p1: ChatRoom?, p2: ChatMessage?) {
+    }
 }

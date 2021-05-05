@@ -87,8 +87,8 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutine_version"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutine_version"
-    implementation 'de.suitepad:linphone-sdk:1.0.0-SNAPSHOT'
     implementation 'de.suitepad:linbridge-api:1.1.0'
+    implementation "org.linphone.no-video:linphone-sdk-android-debug:4.3.5"
     implementation 'androidx.appcompat:appcompat:1.0.0'
     implementation group: 'com.jakewharton.timber', name: 'timber', version: '4.7.1'
     implementation ('com.github.danysantiago:sendgrid-android:1') {

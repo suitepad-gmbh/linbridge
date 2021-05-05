@@ -83,6 +83,9 @@ class LinbridgeEventLogger(val loggerLevel: Int = Log.DEBUG) : CoreListener {
         log("onInfoReceived: ")
     }
 
+    override fun onChatRoomRead(p0: Core?, p1: ChatRoom?) {
+    }
+
     override fun onCallStatsUpdated(lc: Core?, call: Call?, stats: CallStats?) {
         log("onCallStatsUpdated: ")
     }
@@ -127,6 +130,9 @@ class LinbridgeEventLogger(val loggerLevel: Int = Log.DEBUG) : CoreListener {
         log("onLogCollectionUploadProgressIndication: ")
     }
 
+    override fun onChatRoomSubjectChanged(p0: Core?, p1: ChatRoom?) {
+    }
+
     override fun onVersionUpdateCheckResultReceived(lc: Core?, result: VersionUpdateCheckResult?, version: String?, url: String?) {
         log("onVersionUpdateCheckResultReceived: ")
     }
@@ -145,6 +151,9 @@ class LinbridgeEventLogger(val loggerLevel: Int = Log.DEBUG) : CoreListener {
 
     override fun onDtmfReceived(lc: Core?, call: Call?, dtmf: Int) {
         log("onDtmfReceived: ")
+    }
+
+    override fun onMessageSent(p0: Core?, p1: ChatRoom?, p2: ChatMessage?) {
     }
 
     fun log(content: String) {
