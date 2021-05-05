@@ -32,6 +32,7 @@ allprojects {
         mavenLocal()
         google()
         jcenter()
+        maven {url "https://linphone.org/maven_repository/" }
         maven { url "https://dl.bintray.com/spekframework/spek-dev" }
         maven { url "https://suitepad.mycloudrepo.io/public/repositories/public"}
     }
