@@ -134,8 +134,11 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
 
         val address = if (destination.startsWith("<sip") || destination.startsWith("sip"))
             destination
-        else "sip:$destination@${core.defaultProxyConfig.domain}"
+        else Factory.instance().createAddress(core.defaultProxyConfig.serverAddr).domain.let { host ->
+            "sip:$destination@$host"
+        }
 
+        Timber.i("calling $address")
         core.invite(address)
         return null
     }
