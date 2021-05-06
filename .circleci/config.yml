@@ -70,88 +70,6 @@ jobs:
             - app/build
             - linbridge-api/build
 
-  test:
-    working_directory: ~/linbridge
-    docker:
-      - image: circleci/android:api-29
-
-    environment:
-      JVM_OPTS: -Xmx3200m
-
-    steps:
-      - checkout
-      - run: git submodule update --init --recursive
-
-      # Download and cache dependencies
-      - restore_cache:
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum "app/build.gradle" }}
-
-      - run:
-          name: Load parameters
-          command: |
-            echo sendgrid.mailto=$SENDGRID_MAILTO >> local.properties
-            echo sendgrid.apikey=$SENDGRID_APIKEY >> local.properties
-
-      - run:
-          name: Download Dependencies
-          command: ./gradlew androidDependencies
-
-      - save_cache:
-          paths:
-            - ~/.gradle
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum "app/build.gradle" }}
-
-      - attach_workspace:
-          at: ./
-
-      - run:
-          name: Base64 decode firebase file
-          command: echo $GOOGLE_SERVICES | base64 -d > app/google-services.json
-
-      # run lint
-      - run:
-          name: Run tests
-          command: ./gradlew testReleaseUnitTest
-
-      - run:
-          name: Save test results
-          command: |
-            mkdir -p ~/junit/
-            mkdir -p ~/junit_reports/
-            mkdir -p ~/junit_coverage/
-            find . -type f -regex ".*/build/test-results/.*/.*xml" -exec cp {} ~/junit/ \;
-            modules_with_coverage=$(find . -type f -regex ".*/build/reports/jacoco/.*/*.xml" | sed 's/\.\/\(.*\)\/build.*/\1/')
-            for module in $modules_with_coverage;do
-              module_friendly_name=$(echo $module | tr '/' '_')
-              cp ${module}/build/reports/jacoco/jacocoTestReleaseReport/jacocoTestReleaseReport.xml ~/junit/${module_friendly_name}_coverage.xml
-              cp -r ${module}/build/reports/jacoco/jacocoTestReleaseReport/html ~/junit_coverage/${module_friendly_name}_coverage
-            done;
-            modules_with_reports=$(find . -type f -regex ".*/build/reports/tests/testReleaseUnitTest/index.html" | sed 's/\.\/\(.*\)\/build.*/\1/')
-            for module in $modules_with_reports; do
-              file=$(dirname $(find . -type f -regex "./${module}/build/reports/tests/testReleaseUnitTest/index.html"))
-              cp -r $file ~/junit_reports/$(echo $module | tr '/' '_')
-            done;
-          when: always
-      - store_test_results:
-          path: ~/junit
-      - store_artifacts:
-          path: ~/junit
-          destination: test_xml
-      - store_artifacts:
-          path: ~/junit_reports
-          destination: test_results
-      - store_artifacts:
-          path: ~/junit_coverage
-          destination: test_coverage
-
-      - persist_to_workspace:
-          root: ./
-          paths:
-            - build
-            - app/build
-            - linbridge-api/build
-
-
   release:
     working_directory: ~/linbridge
     docker:
@@ -298,16 +216,10 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - test:
-          requires:
-            - build
-          filters:
-            tags:
-              only: /.*/
       - release:
           context: apk_signing
           requires:
-            - test
+            - build
           filters:
             branches:
               ignore: /.*/
