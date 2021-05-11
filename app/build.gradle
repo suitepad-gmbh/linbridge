@@ -36,8 +36,8 @@ android {
         minSdkVersion 16
         targetSdkVersion 28
 
-        versionCode 1050240
-        versionName "1.5.2"
+        versionCode 1050340
+        versionName "1.5.3"
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         buildConfigField 'String', 'SENDGRID_MAIL_TO', "\"${getDestinationEmailAddress()}\""

@@ -1,4 +1,7 @@
 # CHANGELOG
+### 1.5.3
+- FIX: NPE on invalid address
+
 ### 1.5.2
 - CHORE: migrate to linphone android sdk instead of using our own compiled sdk
 - FIX: outgoing calls now go through the proxy 
