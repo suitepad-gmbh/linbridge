@@ -74,11 +74,15 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
         clearCredentials()
 
         val sipAddress = "sip:$username@$host:$port"
-        val address: Address = try {
+        val address: Address? = try {
             Factory.instance().createAddress(sipAddress)
         } catch (e: IllegalStateException) {
             Timber.e(e, "couldn't connect using \"$sipAddress\"")
             clearCredentials()
+            return
+        }
+        if (address == null) {
+            Timber.w(IllegalArgumentException("Couldn't create address from $sipAddress"))
             return
         }
 
@@ -96,7 +100,11 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
                 sipProxy = proxy
             }
         }
-        val proxyAddress: Address = Factory.instance().createAddress(sipProxy)
+        val proxyAddress: Address? = Factory.instance().createAddress(sipProxy)
+        if (proxyAddress == null) {
+            Timber.w(IllegalArgumentException("couldn't create address from $sipProxy"))
+            return
+        }
         proxyAddress.transport = TransportType.Udp
 
         proxyConfig.enableRegister(true)
