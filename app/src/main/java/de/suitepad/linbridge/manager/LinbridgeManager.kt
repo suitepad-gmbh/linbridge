@@ -1,14 +1,22 @@
 package de.suitepad.linbridge.manager
 
 import android.content.Context
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.android.scopes.ServiceScoped
 import de.suitepad.linbridge.api.AudioConfiguration
 import de.suitepad.linbridge.api.core.*
 import org.linphone.core.*
 import timber.log.Timber
 import java.lang.IllegalStateException
 import java.util.*
+import javax.inject.Inject
 
-class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener, IManager {
+@ServiceScoped
+class LinbridgeManager @Inject constructor(
+        @ApplicationContext context: Context,
+        private val core: Core
+) : OptionalCoreListener, IManager {
 
     var registrationState: RegistrationState? = null
 
@@ -25,6 +33,8 @@ class LinbridgeManager(context: Context, val core: Core) : OptionalCoreListener,
     val defaultRingtonePath: String
 
     init {
+        core.addListener(this)
+
         val baseDir = context.filesDir.absolutePath
         core.rootCa = "$baseDir/rootca.pem"
         core.ringback = "$baseDir/ringback.wav"

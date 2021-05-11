@@ -6,16 +6,13 @@ import android.content.Context
 import android.content.Intent
 import android.os.*
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import dagger.hilt.android.AndroidEntryPoint
 import de.suitepad.linbridge.api.ILinbridgeListener
 import de.suitepad.linbridge.api.AudioConfiguration
 import de.suitepad.linbridge.api.core.AuthenticationState
 import de.suitepad.linbridge.api.core.CallEndReason
 import de.suitepad.linbridge.api.core.CallError
 import de.suitepad.linbridge.api.core.Credentials
-import de.suitepad.linbridge.dep.BridgeModule
-import de.suitepad.linbridge.dep.BridgeServiceComponent
-import de.suitepad.linbridge.dep.DaggerBridgeServiceComponent
-import de.suitepad.linbridge.dep.ManagerModule
 import de.suitepad.linbridge.dispatcher.IBridgeEventDispatcher
 import de.suitepad.linbridge.manager.IManager
 import timber.log.Timber
@@ -24,6 +21,7 @@ import java.lang.IllegalArgumentException
 import java.lang.IllegalStateException
 import javax.inject.Inject
 
+@AndroidEntryPoint
 class BridgeService : Service(), IBridgeService {
 
     companion object {
@@ -31,13 +29,9 @@ class BridgeService : Service(), IBridgeService {
         const val EXTRA_ACTION = "ACTION"
     }
 
-    lateinit var component: BridgeServiceComponent
+    @Inject lateinit var linphoneManager: IManager
 
-    @Inject
-    lateinit var linphoneManager: IManager
-
-    @Inject
-    lateinit var eventDispatcher: IBridgeEventDispatcher
+    @Inject lateinit var eventDispatcher: IBridgeEventDispatcher
 
     override fun onCreate() {
         super.onCreate()
@@ -48,19 +42,8 @@ class BridgeService : Service(), IBridgeService {
         copyIfNotExists(this, R.raw.toy_mono, "$baseDir/toymono.wav")
         copyIfNotExists(this, R.raw.lp_default, "$baseDir/linphonerc")
 
-        init()
         startForeground(1, Notification())
         startService()
-    }
-
-    private fun init() {
-        component = DaggerBridgeServiceComponent.builder()
-                .appComponent(BridgeApplication.getApplication(this).component)
-                .bridgeModule(BridgeModule(this))
-                .managerModule(ManagerModule(true))
-                .build()
-
-        component.inject(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

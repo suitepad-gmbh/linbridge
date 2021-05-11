@@ -1,5 +1,6 @@
 package de.suitepad.linbridge.dispatcher
 
+import dagger.hilt.android.scopes.ServiceScoped
 import de.suitepad.linbridge.api.ILinbridgeListener
 import de.suitepad.linbridge.api.core.AuthenticationState
 import de.suitepad.linbridge.api.core.CallState
@@ -7,8 +8,10 @@ import de.suitepad.linbridge.manager.OptionalCoreListener
 import de.suitepad.linbridge.manager.configure
 import org.linphone.core.*
 import timber.log.Timber
+import javax.inject.Inject
 
-class BridgeEventDispatcher : OptionalCoreListener, IBridgeEventDispatcher {
+@ServiceScoped
+class BridgeEventDispatcher @Inject constructor() : OptionalCoreListener, IBridgeEventDispatcher {
 
     override var listener: ILinbridgeListener? = null
 

@@ -11,12 +11,15 @@ import org.linphone.core.LoggingServiceListener
 import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.*
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlin.coroutines.CoroutineContext
 
 @SuppressLint("SimpleDateFormat")
 private val simpleDateFormat = SimpleDateFormat("MM-dd HH:mm:ss")
 
-class LogCatcher : Timber.Tree(), LoggingServiceListener, CoroutineScope {
+@Singleton
+class LogCatcher @Inject constructor() : Timber.Tree(), LoggingServiceListener, CoroutineScope {
 
     companion object {
         const val LOG_SIZE = 250

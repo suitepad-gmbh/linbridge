@@ -4,35 +4,32 @@ import android.content.Context
 import android.util.Log
 import dagger.Module
 import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.components.ServiceComponent
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.android.scopes.ServiceScoped
 import de.suitepad.linbridge.dispatcher.BridgeEventDispatcher
 import de.suitepad.linbridge.dispatcher.IBridgeEventDispatcher
 import de.suitepad.linbridge.manager.IManager
 import de.suitepad.linbridge.logger.LinbridgeEventLogger
 import de.suitepad.linbridge.logger.LogCatcher
 import de.suitepad.linbridge.manager.LinbridgeManager
+import org.linphone.core.BuildConfig
 import org.linphone.core.Core
 import org.linphone.core.Factory
 import org.linphone.core.LoggingServiceListener
 import javax.inject.Named
 
-@Module(includes = [BridgeModule::class])
-class ManagerModule(val debug: Boolean) {
+@Module
+@InstallIn(ServiceComponent::class)
+class ManagerModule {
 
     @Provides
-    @BridgeServiceComponent.BridgeServiceScope
-    fun provideManager(context: Context, core: Core, logger: LinbridgeEventLogger): IManager {
-        val linphoneManager = LinbridgeManager(context, core)
-        linphoneManager.core.addListener(linphoneManager)
-        linphoneManager.core.addListener(logger)
-        return linphoneManager
-    }
-
-    @Provides
-    @BridgeServiceComponent.BridgeServiceScope
+    @ServiceScoped
     fun provideCore(
             linphoneCoreListener: BridgeEventDispatcher,
             factory: Factory,
-            context: Context
+            @ApplicationContext context: Context,
     ): Core {
         return factory.createCore("${context.filesDir.absolutePath}/linphonerc", "${context.filesDir.absolutePath}/linphonerc", context).apply {
             addListener(linphoneCoreListener)
@@ -40,34 +37,13 @@ class ManagerModule(val debug: Boolean) {
     }
 
     @Provides
-    @BridgeServiceComponent.BridgeServiceScope
-    fun provideEventDispatcher(coreListener: BridgeEventDispatcher): IBridgeEventDispatcher = coreListener
-
-    @Provides
-    @BridgeServiceComponent.BridgeServiceScope
-    fun provideEventDispatcherImpl(): BridgeEventDispatcher {
-        return BridgeEventDispatcher()
-    }
-
-    @Provides
-    @BridgeServiceComponent.BridgeServiceScope
-    fun provideCoreFactory(@DebugFlag debug: Boolean, loggingServiceListener: LogCatcher): Factory {
+    @ServiceScoped
+    fun provideCoreFactory(loggingServiceListener: LogCatcher): Factory {
         return Factory.instance().apply {
-            setDebugMode(debug, "LibLinphone")
+            setDebugMode(true, "LibLinphone")
             this.loggingService.setListener(loggingServiceListener)
         }
     }
-
-    @Provides
-    @BridgeServiceComponent.BridgeServiceScope
-    fun provideEventLogger(@DebugFlag debug: Boolean): LinbridgeEventLogger {
-        return LinbridgeEventLogger(if (debug) Log.INFO else Log.DEBUG)
-    }
-
-    @Provides
-    @DebugFlag
-    @BridgeServiceComponent.BridgeServiceScope
-    fun provideIsDebug(): Boolean = debug
 
     @Named("debug")
     annotation class DebugFlag

@@ -3,6 +3,7 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'com.google.firebase.crashlytics'
+apply plugin: 'dagger.hilt.android.plugin'
 
 apply plugin: 'suitepad-gradletools-repos'
 apply plugin: 'suitepad-gradletools-signing'
@@ -80,9 +81,8 @@ dependencies {
 
 // Dagger dependencies
 dependencies {
-    implementation 'com.google.dagger:dagger-android:2.22.1'
-    annotationProcessor 'com.google.dagger:dagger-compiler:2.22.1'
-    kapt 'com.google.dagger:dagger-compiler:2.22.1'
+    implementation "com.google.dagger:hilt-android:$hilt_version"
+    kapt "com.google.dagger:hilt-compiler:$hilt_version"
 }
 
 // Test dependencies

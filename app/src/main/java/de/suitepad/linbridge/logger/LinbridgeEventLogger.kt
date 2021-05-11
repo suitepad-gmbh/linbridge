@@ -1,10 +1,21 @@
 package de.suitepad.linbridge.logger
 
 import android.util.Log
+import de.suitepad.linbridge.dep.ManagerModule
 import org.linphone.core.*
 import timber.log.Timber
+import javax.inject.Inject
 
-class LinbridgeEventLogger(val loggerLevel: Int = Log.DEBUG) : CoreListener {
+class LinbridgeEventLogger @Inject constructor(
+        @ManagerModule.DebugFlag isDebug: Boolean,
+        core: Core
+) : CoreListener {
+
+    val loggerLevel: Int = if (isDebug) Log.INFO else Log.DEBUG
+
+    init {
+        core.addListener(this)
+    }
 
     override fun onTransferStateChanged(lc: Core?, transfered: Call?, newCallState: Call.State?) {
         log("onTransferStateChanged: ")
