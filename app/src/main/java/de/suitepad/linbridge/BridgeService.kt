@@ -1,10 +1,14 @@
 package de.suitepad.linbridge
 
 import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.*
+import androidx.annotation.RequiresApi
+import androidx.core.app.NotificationCompat
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import dagger.hilt.android.AndroidEntryPoint
 import de.suitepad.linbridge.api.ILinbridgeListener
@@ -27,6 +31,7 @@ class BridgeService : Service(), IBridgeService {
     companion object {
         const val SERVICE_NAME = "de.suitepad.linbridge.BridgeService"
         const val EXTRA_ACTION = "ACTION"
+        const val NOTIFICATION_CHANNEL_ID = "linbridge_channel"
     }
 
     @Inject lateinit var linphoneManager: IManager
@@ -42,9 +47,35 @@ class BridgeService : Service(), IBridgeService {
         copyIfNotExists(this, R.raw.toy_mono, "$baseDir/toymono.wav")
         copyIfNotExists(this, R.raw.lp_default, "$baseDir/linphonerc")
 
-        startForeground(1, Notification())
+        startForeground(1, createNotification())
         startService()
     }
+
+    private fun createNotification(): Notification {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createNotificationChannel()
+        }
+        val builder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+        builder.setSmallIcon(R.mipmap.ic_launcher)
+        builder.setOngoing(true)
+        builder.priority = NotificationCompat.PRIORITY_MIN
+        builder.setCategory(NotificationCompat.CATEGORY_SERVICE)
+
+        return builder.build()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun createNotificationChannel() {
+        val channel = NotificationChannel(
+            NOTIFICATION_CHANNEL_ID,
+            "Linbridge",
+            NotificationManager.IMPORTANCE_LOW
+        )
+
+        (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+            .createNotificationChannel(channel)
+    }
+
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val result = super.onStartCommand(intent, flags, startId)
