@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.*
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
@@ -47,7 +48,11 @@ class BridgeService : Service(), IBridgeService {
         copyIfNotExists(this, R.raw.toy_mono, "$baseDir/toymono.wav")
         copyIfNotExists(this, R.raw.lp_default, "$baseDir/linphonerc")
 
-        startForeground(1, createNotification())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(1, createNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+        } else {
+            startForeground(1, createNotification())
+        }
         startService()
     }
 
