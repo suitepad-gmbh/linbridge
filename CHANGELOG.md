@@ -1,4 +1,7 @@
 # CHANGELOG
+### 1.5.4
+- FEAT: add android 11 support
+
 ### 1.5.3
 - FIX: NPE on invalid address
 
