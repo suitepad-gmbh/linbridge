@@ -2,7 +2,10 @@ package de.suitepad.linbridge.logger
 
 import android.annotation.SuppressLint
 import android.util.Log
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.linphone.core.LogLevel
@@ -84,7 +87,7 @@ class LogCatcher @Inject constructor() : Timber.Tree(), LoggingServiceListener, 
     class LogEntry(var date: Date, val priority: Int, val tag: String?, val message: String, var t: Throwable?, var count: Int = 1) {
 
         fun getStyledText(): String {
-            var result = if (count>1) "<font color=\"red\">[x$count]</font>" else ""
+            var result = if (count > 1) "<font color=\"red\">[x$count]</font>" else ""
             if (!message.isBlank()) {
                 result += getColoredText(getColor(priority), date, tag, message)
             }
@@ -96,7 +99,7 @@ class LogCatcher @Inject constructor() : Timber.Tree(), LoggingServiceListener, 
 
         private fun getColoredText(color: String, date: Date, tag: String?, message: String): String {
             return message.lines().foldIndexed("<font color=\"$color\">${simpleDateFormat.format(date)} ") { index, acc, c ->
-                "${if (tag != null) "[$tag] " else ""}$acc$c${if (index == message.lines().size-1) "" else LINE_BREAK}"
+                "${if (tag != null) "[$tag] " else ""}$acc$c${if (index == message.lines().size - 1) "" else LINE_BREAK}"
             } + "</font>$EXTERNAL_LINE_BREAK"
         }
 
@@ -133,12 +136,11 @@ class LogCatcher @Inject constructor() : Timber.Tree(), LoggingServiceListener, 
 
     }
 
-    override fun onLogMessageWritten(p0: LoggingService?, p1: String?, p2: LogLevel?, p3: String?) {
-        Timber.tag(p1).log(p2?.toInt() ?: Log.INFO, p3)
+    override fun onLogMessageWritten(logService: LoggingService, domain: String, level: LogLevel?, message: String) {
+        Timber.tag(domain).log(level?.toInt() ?: Log.INFO, message)
     }
 
     interface LogListener {
         fun log(message: String, replaceLastLine: Boolean)
     }
-
 }

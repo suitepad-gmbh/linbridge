@@ -1,21 +1,20 @@
 package de.suitepad.linbridge.manager
 
 import android.content.Context
-import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ServiceScoped
 import de.suitepad.linbridge.api.AudioConfiguration
 import de.suitepad.linbridge.api.core.*
+import de.suitepad.linbridge.BuildConfig
 import org.linphone.core.*
 import timber.log.Timber
-import java.lang.IllegalStateException
 import java.util.*
 import javax.inject.Inject
 
 @ServiceScoped
 class LinbridgeManager @Inject constructor(
-        @ApplicationContext context: Context,
-        private val core: Core
+    @ApplicationContext context: Context,
+    private val core: Core
 ) : OptionalCoreListener, IManager {
 
     var registrationState: RegistrationState? = null
@@ -44,10 +43,10 @@ class LinbridgeManager @Inject constructor(
         core.clearAllAuthInfo()
         core.clearProxyConfig()
         core.disableChat(Reason.NotImplemented)
-        core.enableVideoDisplay(false)
-        core.enableVideoCapture(false)
-        core.enableVideoMulticast(false)
-        core.enableVideoPreview(false)
+        core.isVideoDisplayEnabled = false
+        core.isVideoCaptureEnabled = false
+        core.isVideoMulticastEnabled = false
+        core.isVideoPreviewEnabled = false
 
         core.setUserAgent(BuildConfig.APPLICATION_ID, BuildConfig.VERSION_NAME)
 
@@ -96,7 +95,11 @@ class LinbridgeManager @Inject constructor(
             return
         }
 
-        val authenticationInfo = Factory.instance().createAuthInfo(address.username, authId, password, null, null, address.domain)
+        val authenticationInfo = address.username
+            ?.let { Factory.instance().createAuthInfo(it, authId, password, null, null, address.domain) }
+            ?: return Timber.w(
+                IllegalArgumentException("Couldn't read username from $address")
+            )
 
         val proxyConfig = core.createProxyConfig()
         var sipProxy = "sip:"
@@ -104,7 +107,8 @@ class LinbridgeManager @Inject constructor(
             sipProxy += host
         } else {
             if (!proxy.startsWith("sip:") && !proxy.startsWith("<sip:") &&
-                    !proxy.startsWith("sips:") && !proxy.startsWith("<sips:")) {
+                !proxy.startsWith("sips:") && !proxy.startsWith("<sips:")
+            ) {
                 sipProxy += proxy
             } else {
                 sipProxy = proxy
@@ -117,10 +121,10 @@ class LinbridgeManager @Inject constructor(
         }
         proxyAddress.transport = TransportType.Udp
 
-        proxyConfig.enableRegister(true)
+        proxyConfig.isRegisterEnabled = true
         proxyConfig.serverAddr = proxyAddress.asStringUriOnly()
         proxyConfig.identityAddress = address
-        proxyConfig.enableQualityReporting(false)
+        proxyConfig.isQualityReportingEnabled = false
         proxyConfig.avpfMode = AVPFMode.Disabled
 
         core.addAuthInfo(authenticationInfo)
@@ -132,7 +136,7 @@ class LinbridgeManager @Inject constructor(
 
     override fun clearCredentials() {
         val account = core.defaultProxyConfig ?: return
-        account.enableRegister(false)
+        account.isRegisterEnabled = false
         core.clearProxyConfig()
         core.clearAllAuthInfo()
     }
@@ -150,10 +154,13 @@ class LinbridgeManager @Inject constructor(
             return CallError.AlreadyInCall
         }
 
-        val address = if (destination.startsWith("<sip") || destination.startsWith("sip"))
+        val address = if (destination.startsWith("<sip") || destination.startsWith("sip")) {
             destination
-        else Factory.instance().createAddress(core.defaultProxyConfig.serverAddr).domain.let { host ->
-            "sip:$destination@$host"
+        } else {
+            val address = core.defaultProxyConfig?.serverAddr ?: return CallError.NetworkUnreachable
+            Factory.instance().createAddress(address)?.domain.let { host ->
+                "sip:$destination@$host"
+            }
         }
 
         Timber.i("calling $address")
@@ -162,20 +169,14 @@ class LinbridgeManager @Inject constructor(
     }
 
     override fun answerCall(): CallError? {
-        if (core.currentCall == null) {
-            return CallError.NoCallAvailable
-        }
-
-        core.currentCall.accept()
+        val currentCall = core.currentCall ?: return CallError.NoCallAvailable
+        currentCall.accept()
         return null
     }
 
     override fun rejectCall(): CallError? {
-        if (core.currentCall == null) {
-            return CallError.NoCallAvailable
-        }
-
-        core.currentCall.terminate()
+        val currentCall = core.currentCall ?: return CallError.NoCallAvailable
+        currentCall.terminate()
         return null
     }
 
@@ -201,13 +202,14 @@ class LinbridgeManager @Inject constructor(
         }
         val info = core.authInfoList[0]
         val proxy = core.defaultProxyConfig
+        val domain = info.domain ?: return null
         return Credentials(
-                info.domain.substringBefore(':'),
-                info.domain.substringAfter(':').toIntOrNull() ?: 5060,
-                info.username,
-                info.password,
-                proxy?.serverAddr,
-                info.userid
+            domain.substringBefore(':'),
+            domain.substringAfter(':').toIntOrNull() ?: 5060,
+            info.username,
+            info.password,
+            proxy?.serverAddr,
+            info.userid
         )
     }
 
@@ -226,11 +228,11 @@ class LinbridgeManager @Inject constructor(
     }
 
     override fun mute(muted: Boolean) {
-        core.enableMic(!muted)
+        core.isMicEnabled = !muted
     }
 
     override fun isMuted(): Boolean {
-        return !core.micEnabled()
+        return !core.isMicEnabled
     }
 
     override fun getCurrentCallDuration(): Int {
@@ -238,13 +240,13 @@ class LinbridgeManager @Inject constructor(
     }
 
     //<editor-fold desc="CoreListener">
-    override fun onRegistrationStateChanged(lc: Core?, cfg: ProxyConfig?, cstate: RegistrationState?, message: String?) {
+    override fun onRegistrationStateChanged(core: Core, proxyConfig: ProxyConfig, cstate: RegistrationState?, message: String) {
         registrationState = cstate
     }
 
-    override fun onCallStateChanged(lc: Core?, call: Call?, cstate: Call.State?, message: String?) {
-        super.onCallStateChanged(lc, call, cstate, message)
-        callEndReason = call?.reason?.toString()?.let { CallEndReason.valueOf(it) } ?: CallEndReason.None
+    override fun onCallStateChanged(core: Core, call: Call, cstate: Call.State?, message: String) {
+        super.onCallStateChanged(core, call, cstate, message)
+        callEndReason = call.reason?.toString()?.let { CallEndReason.valueOf(it) } ?: CallEndReason.None
     }
 
     //</editor-fold>
@@ -254,8 +256,11 @@ class LinbridgeManager @Inject constructor(
 fun Core.configure(settings: AudioConfiguration) {
     micGainDb = settings.microphoneGain.toFloat()
     playbackGainDb = settings.speakerGain.toFloat()
-    enableEchoCancellation(settings.echoCancellation)
-    enableEchoLimiter(settings.echoLimiter)
+    if (hasBuiltinEchoCanceller()) {
+        isEchoCancellationEnabled = settings.echoCancellation
+    }
+    isEchoLimiterEnabled = settings.echoLimiter
+    //avpfMode = AVPFMode.Disabled
     config.setInt("sound", "el_sustain", settings.echoLimiterSustain)
     config.setString("sound", "el_type", "mic")
     config.setFloat("sound", "el_thres", settings.echoLimiterSpeakerThreshold)
@@ -270,8 +275,10 @@ fun Core.configure(settings: AudioConfiguration) {
 fun Core.enableCodecs(types: Array<AudioCodec>?) {
     audioPayloadTypes.forEach { payloadType ->
         val audioCodec = AudioCodec.getAudioCodecByMimeAndRate(payloadType.mimeType, payloadType.clockRate)
-        payloadType.enable((types.isNullOrEmpty() && audioCodec != null) || //  if not specifying codecs to open and the codec is supported by bell
-                types?.contains(audioCodec) ?: false) // if codec is in the enabled codecs list
+        payloadType.enable(
+            (types.isNullOrEmpty() && audioCodec != null) || //  if not specifying codecs to open and the codec is supported by bell
+                    types?.contains(audioCodec) ?: false
+        ) // if codec is in the enabled codecs list
     }
 }
 
@@ -285,8 +292,8 @@ fun Core.getConfiguration(): AudioConfiguration {
     return AudioConfiguration().also {
         it.microphoneGain = micGainDb.toInt()
         it.speakerGain = playbackGainDb.toInt()
-        it.echoCancellation = echoCancellationEnabled()
-        it.echoLimiter = echoLimiterEnabled()
+        it.echoCancellation = isEchoCancellationEnabled
+        it.echoLimiter = isEchoLimiterEnabled
         it.echoLimiterSustain = config.getInt("sound", "el_sustain", 0)
         it.echoLimiterSpeakerThreshold = config.getFloat("sound", "el_thres", 0f)
         it.echoLimiterMicrophoneDecrease = config.getInt("sound", "el_force", 0)
