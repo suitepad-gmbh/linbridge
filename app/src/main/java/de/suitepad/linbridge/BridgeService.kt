@@ -7,13 +7,14 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.os.*
+import android.os.Build
+import android.os.IBinder
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import dagger.hilt.android.AndroidEntryPoint
-import de.suitepad.linbridge.api.ILinbridgeListener
 import de.suitepad.linbridge.api.AudioConfiguration
+import de.suitepad.linbridge.api.ILinbridgeListener
 import de.suitepad.linbridge.api.core.AuthenticationState
 import de.suitepad.linbridge.api.core.CallEndReason
 import de.suitepad.linbridge.api.core.CallError
@@ -22,8 +23,6 @@ import de.suitepad.linbridge.dispatcher.IBridgeEventDispatcher
 import de.suitepad.linbridge.manager.IManager
 import timber.log.Timber
 import java.io.File
-import java.lang.IllegalArgumentException
-import java.lang.IllegalStateException
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -35,9 +34,11 @@ class BridgeService : Service(), IBridgeService {
         const val NOTIFICATION_CHANNEL_ID = "linbridge_channel"
     }
 
-    @Inject lateinit var linphoneManager: IManager
+    @Inject
+    lateinit var linphoneManager: IManager
 
-    @Inject lateinit var eventDispatcher: IBridgeEventDispatcher
+    @Inject
+    lateinit var eventDispatcher: IBridgeEventDispatcher
 
     override fun onCreate() {
         super.onCreate()
@@ -49,7 +50,7 @@ class BridgeService : Service(), IBridgeService {
         copyIfNotExists(this, R.raw.lp_default, "$baseDir/linphonerc")
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(1, createNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+            startForeground(1, createNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL)
         } else {
             startForeground(1, createNotification())
         }
@@ -60,25 +61,27 @@ class BridgeService : Service(), IBridgeService {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createNotificationChannel()
         }
-        val builder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-        builder.setSmallIcon(R.mipmap.ic_launcher)
-        builder.setOngoing(true)
-        builder.priority = NotificationCompat.PRIORITY_MIN
-        builder.setCategory(NotificationCompat.CATEGORY_SERVICE)
-
-        return builder.build()
+        return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_telephone_outline)
+            .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setContentTitle(getString(R.string.bridge_service_notification_title))
+            .setContentText(getString(R.string.bridge_service_notification_text))
+            .build()
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             NOTIFICATION_CHANNEL_ID,
-            "Linbridge",
+            getString(R.string.bridge_service_channel_name),
             NotificationManager.IMPORTANCE_LOW
-        )
+        ).apply {
+            description = getString(R.string.bridge_service_channel_desc)
+        }
 
-        (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-            .createNotificationChannel(channel)
+        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
 
@@ -112,21 +115,22 @@ class BridgeService : Service(), IBridgeService {
 
     override fun authenticate(credentials: Credentials?) {
         if (credentials == null ||
-                credentials.host == null ||
-                credentials.username == null ||
-                credentials.password == null) {
+            credentials.host == null ||
+            credentials.username == null ||
+            credentials.password == null
+        ) {
             FirebaseCrashlytics.getInstance().setCustomKey("credentials", "None")
             linphoneManager.clearCredentials()
             return
         } else {
             FirebaseCrashlytics.getInstance().setCustomKey("credentials", "sip:${credentials.username}@${credentials.host}")
             linphoneManager.authenticate(
-                    credentials.host,
-                    if (credentials.port == 0) 5060 else credentials.port,
-                    credentials.authId,
-                    credentials.username,
-                    credentials.password,
-                    credentials.proxy
+                credentials.host,
+                if (credentials.port == 0) 5060 else credentials.port,
+                credentials.authId,
+                credentials.username,
+                credentials.password,
+                credentials.proxy
             )
         }
     }

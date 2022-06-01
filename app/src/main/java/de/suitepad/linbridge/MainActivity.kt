@@ -7,6 +7,7 @@ import android.text.Html
 import android.view.View
 import android.widget.Toast
 import com.sendgrid.SendGrid
+import de.suitepad.linbridge.BuildConfig
 import de.suitepad.linbridge.helper.LogsExportHelper
 import de.suitepad.linbridge.logger.LogCatcher
 import kotlinx.android.synthetic.main.activity_main.*
