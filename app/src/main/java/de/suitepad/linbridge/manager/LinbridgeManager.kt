@@ -254,7 +254,9 @@ class LinbridgeManager @Inject constructor(
 fun Core.configure(settings: AudioConfiguration) {
     micGainDb = settings.microphoneGain.toFloat()
     playbackGainDb = settings.speakerGain.toFloat()
-    enableEchoCancellation(settings.echoCancellation)
+    if (hasBuiltinEchoCanceller()) {
+        enableEchoCancellation(settings.echoCancellation)
+    }
     enableEchoLimiter(settings.echoLimiter)
     config.setInt("sound", "el_sustain", settings.echoLimiterSustain)
     config.setString("sound", "el_type", "mic")
