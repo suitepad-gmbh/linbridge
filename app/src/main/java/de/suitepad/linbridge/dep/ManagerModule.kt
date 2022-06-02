@@ -41,7 +41,7 @@ class ManagerModule {
     fun provideCoreFactory(loggingServiceListener: LogCatcher): Factory {
         return Factory.instance().apply {
             setDebugMode(true, "LibLinphone")
-            this.loggingService.setListener(loggingServiceListener)
+            this.loggingService.addListener(loggingServiceListener)
         }
     }
 

@@ -74,7 +74,8 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutine_version"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutine_version"
     implementation 'de.suitepad:linbridge-api:1.1.0'
-    implementation "org.linphone.no-video:linphone-sdk-android-debug:4.3.5"
+    // Here is the versions: https://download.linphone.org/releases/android/maven_repository/org/linphone/linphone-sdk-android/
+    implementation "org.linphone.no-video:linphone-sdk-android-debug:5.1.37"
     implementation 'androidx.appcompat:appcompat:1.4.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.2'
     implementation group: 'com.jakewharton.timber', name: 'timber', version: '4.7.1'

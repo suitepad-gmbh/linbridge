@@ -4,151 +4,198 @@ import org.linphone.core.*
 
 interface OptionalCoreListener : CoreListener {
 
-    override fun onTransferStateChanged(lc: Core?, transfered: Call?, newCallState: Call.State?) {
+    override fun onTransferStateChanged(core: Core, transfered: Call, newCallState: Call.State?) {
 
     }
 
-    override fun onFriendListCreated(lc: Core?, list: FriendList?) {
+    override fun onFriendListCreated(core: Core, friendList: FriendList) {
 
     }
 
-    override fun onSubscriptionStateChanged(lc: Core?, lev: Event?, state: SubscriptionState?) {
+    override fun onSubscriptionStateChanged(core: Core, linphoneEvent: Event, state: SubscriptionState?) {
     }
 
-    override fun onCallLogUpdated(lc: Core?, newcl: CallLog?) {
-
-    }
-
-    override fun onCallStateChanged(lc: Core?, call: Call?, cstate: Call.State?, message: String?) {
+    override fun onCallLogUpdated(core: Core, callLog: CallLog) {
 
     }
 
-    override fun onAuthenticationRequested(lc: Core?, authInfo: AuthInfo?, method: AuthMethod?) {
+    override fun onCallStateChanged(core: Core, call: Call, cstate: Call.State?, message: String) {
 
     }
 
-    override fun onNotifyPresenceReceivedForUriOrTel(lc: Core?, lf: Friend?, uriOrTel: String?, presenceModel: PresenceModel?) {
+    override fun onAuthenticationRequested(core: Core, authInfo: AuthInfo, method: AuthMethod) {
 
     }
 
-    override fun onChatRoomStateChanged(lc: Core?, cr: ChatRoom?, state: ChatRoom.State?) {
+    override fun onNotifyPresenceReceivedForUriOrTel(core: Core, linphoneFriend: Friend, uriOrTel: String, presenceModel: PresenceModel) {
 
     }
 
-    override fun onBuddyInfoUpdated(lc: Core?, lf: Friend?) {
+    override fun onChatRoomStateChanged(core: Core, chatRoom: ChatRoom, state: ChatRoom.State?) {
 
     }
 
-    override fun onNetworkReachable(lc: Core?, reachable: Boolean) {
+    override fun onBuddyInfoUpdated(core: Core, linphoneFriend: Friend) {
 
     }
 
-    override fun onNotifyReceived(lc: Core?, lev: Event?, notifiedEvent: String?, body: Content?) {
+    override fun onNetworkReachable(core: Core, reachable: Boolean) {
 
     }
 
-    override fun onNewSubscriptionRequested(lc: Core?, lf: Friend?, url: String?) {
+    override fun onNotifyReceived(core: Core, linphoneEvent: Event, notifiedEvent: String, body: Content) {
 
     }
 
-    override fun onRegistrationStateChanged(lc: Core?, cfg: ProxyConfig?, cstate: RegistrationState?, message: String?) {
+    override fun onNewSubscriptionRequested(core: Core, linphoneFriend: Friend, url: String) {
 
     }
 
-    override fun onNotifyPresenceReceived(lc: Core?, lf: Friend?) {
+    override fun onRegistrationStateChanged(core: Core, proxyConfig: ProxyConfig, cstate: RegistrationState?, message: String) {
+    }
+
+    override fun onNotifyPresenceReceived(core: Core, linphoneFriend: Friend) {
 
     }
 
-    override fun onEcCalibrationAudioInit(lc: Core?) {
+    override fun onEcCalibrationAudioInit(core: Core) {
 
     }
 
-    override fun onMessageReceived(lc: Core?, room: ChatRoom?, message: ChatMessage?) {
+    override fun onMessageReceived(core: Core, chatRoom: ChatRoom, message: ChatMessage) {
 
     }
 
-    override fun onEcCalibrationResult(lc: Core?, status: EcCalibratorStatus?, delayMs: Int) {
+    override fun onEcCalibrationResult(core: Core, status: EcCalibratorStatus?, delayMs: Int) {
 
     }
 
-    override fun onSubscribeReceived(lc: Core?, lev: Event?, subscribeEvent: String?, body: Content?) {
+    override fun onSubscribeReceived(core: Core, linphoneEvent: Event, subscribeEvent: String, body: Content) {
 
     }
 
-    override fun onInfoReceived(lc: Core?, call: Call?, msg: InfoMessage?) {
+    override fun onInfoReceived(core: Core, call: Call, message: InfoMessage) {
 
     }
 
-    override fun onCallStatsUpdated(lc: Core?, call: Call?, stats: CallStats?) {
+    override fun onCallStatsUpdated(core: Core, call: Call, callStats: CallStats) {
 
     }
 
-    override fun onFriendListRemoved(lc: Core?, list: FriendList?) {
+    override fun onFriendListRemoved(core: Core, friendList: FriendList) {
 
     }
 
-    override fun onReferReceived(lc: Core?, referTo: String?) {
+    override fun onReferReceived(core: Core, referTo: String) {
 
     }
 
-    override fun onQrcodeFound(lc: Core?, result: String?) {
+    override fun onQrcodeFound(core: Core, result: String?) {
 
     }
 
-    override fun onConfiguringStatus(lc: Core?, status: ConfiguringState?, message: String?) {
+    override fun onConfiguringStatus(core: Core, status: ConfiguringState?, message: String?) {
 
     }
 
-    override fun onCallCreated(lc: Core?, call: Call?) {
+    override fun onCallCreated(core: Core, call: Call) {
 
     }
 
-    override fun onPublishStateChanged(lc: Core?, lev: Event?, state: PublishState?) {
+    override fun onPublishStateChanged(core: Core, linphoneEvent: Event, state: PublishState?) {
 
     }
 
-    override fun onCallEncryptionChanged(lc: Core?, call: Call?, on: Boolean, authenticationToken: String?) {
+    override fun onCallEncryptionChanged(core: Core, call: Call, on: Boolean, authenticationToken: String?) {
 
     }
 
-    override fun onIsComposingReceived(lc: Core?, room: ChatRoom?) {
+    override fun onIsComposingReceived(core: Core, chatRoom: ChatRoom) {
 
     }
 
-    override fun onMessageReceivedUnableDecrypt(lc: Core?, room: ChatRoom?, message: ChatMessage?) {
+    override fun onMessageReceivedUnableDecrypt(core: Core, chatRoom: ChatRoom, message: ChatMessage) {
 
     }
 
-    override fun onLogCollectionUploadProgressIndication(lc: Core?, offset: Int, total: Int) {
+    override fun onLogCollectionUploadProgressIndication(core: Core, offset: Int, total: Int) {
 
     }
 
-    override fun onVersionUpdateCheckResultReceived(lc: Core?, result: VersionUpdateCheckResult?, version: String?, url: String?) {
+    override fun onVersionUpdateCheckResultReceived(core: Core, result: VersionUpdateCheckResult, version: String?, url: String?) {
 
     }
 
-    override fun onEcCalibrationAudioUninit(lc: Core?) {
+    override fun onEcCalibrationAudioUninit(core: Core) {
 
     }
 
-    override fun onGlobalStateChanged(lc: Core?, gstate: GlobalState?, message: String?) {
+    override fun onGlobalStateChanged(core: Core, gstate: GlobalState?, message: String) {
 
     }
 
-    override fun onLogCollectionUploadStateChanged(lc: Core?, state: Core.LogCollectionUploadState?, info: String?) {
+    override fun onLogCollectionUploadStateChanged(core: Core, state: Core.LogCollectionUploadState?, info: String) {
 
     }
 
-    override fun onDtmfReceived(lc: Core?, call: Call?, dtmf: Int) {
+    override fun onDtmfReceived(core: Core, call: Call, dtmf: Int) {
 
     }
 
-    override fun onChatRoomRead(p0: Core?, p1: ChatRoom?) {
+    override fun onChatRoomRead(core: Core, chatRoom: ChatRoom) {
     }
 
-    override fun onChatRoomSubjectChanged(p0: Core?, p1: ChatRoom?) {
+    override fun onChatRoomSubjectChanged(core: Core, chatRoom: ChatRoom) {
     }
 
-    override fun onMessageSent(p0: Core?, p1: ChatRoom?, p2: ChatMessage?) {
+    override fun onMessageSent(core: Core, chatRoom: ChatRoom, message: ChatMessage) {
+    }
+
+
+    override fun onAudioDevicesListUpdated(core: Core) {
+
+    }
+
+    override fun onFirstCallStarted(core: Core) {
+
+    }
+
+    override fun onImeeUserRegistration(core: Core, status: Boolean, userId: String, info: String) {
+
+    }
+
+    override fun onChatRoomEphemeralMessageDeleted(core: Core, chatRoom: ChatRoom) {
+    }
+
+    override fun onConferenceStateChanged(core: Core, conference: Conference, state: Conference.State?) {
+
+    }
+
+    override fun onLastCallEnded(core: Core) {
+
+    }
+
+    override fun onAudioDeviceChanged(core: Core, audioDevice: AudioDevice) {
+
+    }
+
+    override fun onCallIdUpdated(core: Core, previousCallId: String, currentCallId: String) {
+
+    }
+
+    override fun onAccountRegistrationStateChanged(core: Core, account: Account, state: RegistrationState?, message: String) {
+
+    }
+
+    override fun onConferenceInfoOnParticipantError(core: Core, conferenceInfo: ConferenceInfo, participant: Address, error: ConferenceInfoError?) {
+
+    }
+
+    override fun onConferenceInfoOnSent(core: Core, conferenceInfo: ConferenceInfo) {
+
+    }
+
+    override fun onConferenceInfoOnParticipantSent(core: Core, conferenceInfo: ConferenceInfo, participant: Address) {
+
     }
 }
