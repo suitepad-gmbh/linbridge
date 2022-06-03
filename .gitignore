@@ -4,6 +4,11 @@
 
 plugins
 
+.idea
+!/.idea/codeStyles
+!/.idea/codeStyles/*
+
+
 *.iml
 platforms/android/.idea/*
 platforms/android/.idea
@@ -12,12 +17,10 @@ build
 *.apk
 
 .gradle
-/.idea
 .DS_Store
 /build
 /app/build
 /captures
-.idea
 projectFilesBackup/
 .project
 /.settings
