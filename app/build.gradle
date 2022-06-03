@@ -1,3 +1,5 @@
+
+
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
@@ -76,10 +78,10 @@ dependencies {
     implementation 'de.suitepad:linbridge-api:1.1.0'
     // Here is the versions: https://download.linphone.org/releases/android/maven_repository/org/linphone/linphone-sdk-android/
     implementation "org.linphone.no-video:linphone-sdk-android:5.1.37"
-    implementation 'androidx.appcompat:appcompat:1.4.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.2'
-    implementation group: 'com.jakewharton.timber', name: 'timber', version: '4.7.1'
-    implementation ('com.github.danysantiago:sendgrid-android:1') {
+    implementation "androidx.appcompat:appcompat:1.4.1"
+    implementation "androidx.constraintlayout:constraintlayout:2.1.4"
+    implementation "com.jakewharton.timber:timber:5.0.1"
+    implementation ("com.github.danysantiago:sendgrid-android:1") {
         exclude group: 'org.apache.httpcomponents.httpclient-android'
         exclude group: 'org.apache.httpcomponents', module: 'httpclient'
     }
@@ -93,9 +95,9 @@ dependencies {
 
 // Test dependencies
 dependencies {
-    testImplementation 'junit:junit:4.13.1'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
 }
 
 dependencies {
