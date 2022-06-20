@@ -1,4 +1,8 @@
 # CHANGELOG
+### 2.0.0
+- STYLE: added code style into the versioning
+- FIX: linphone library is updated
+
 ### 1.5.4
 - FEAT: add android 11 support
 
