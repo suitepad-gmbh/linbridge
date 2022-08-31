@@ -1,4 +1,7 @@
 # CHANGELOG
+### 2.0.0-hotfix-busy_here
+- FIX: receiver says busy after ringing for 1-2 seconds
+
 ### 2.0.0
 - STYLE: added code style into the versioning
 - FIX: linphone library is updated
