@@ -39,6 +39,7 @@ class LinbridgeManager @Inject constructor(
         core.ringback = "$baseDir/ringback.wav"
         defaultRingtonePath = "$baseDir/toymono.wav"
         core.ring = null
+        core.incTimeout = 40
 
         core.clearAllAuthInfo()
         core.clearProxyConfig()
@@ -245,6 +246,7 @@ class LinbridgeManager @Inject constructor(
     }
 
     override fun onCallStateChanged(core: Core, call: Call, cstate: Call.State?, message: String) {
+        Timber.i("::: incTimeout = ${core.incTimeout} ::: inCallTimeout = ${core.inCallTimeout}")
         super.onCallStateChanged(core, call, cstate, message)
         callEndReason = call.reason?.toString()?.let { CallEndReason.valueOf(it) } ?: CallEndReason.None
     }
