@@ -1,4 +1,8 @@
 # CHANGELOG
+### 2.0.1
+- FIX: linbridge crash
+- FIX: receiver says busy after ringing for 1-2 seconds
+
 ### 2.0.0
 - STYLE: added code style into the versioning
 - FIX: linphone library is updated
