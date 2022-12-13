@@ -1,19 +1,22 @@
 package de.suitepad.linbridge.manager
 
 import android.content.Context
+import android.media.AudioManager
+import android.os.Build
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ServiceScoped
+import de.suitepad.linbridge.BuildConfig
 import de.suitepad.linbridge.api.AudioConfiguration
 import de.suitepad.linbridge.api.core.*
-import de.suitepad.linbridge.BuildConfig
 import org.linphone.core.*
+import org.linphone.core.tools.Log
 import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
 
 @ServiceScoped
 class LinbridgeManager @Inject constructor(
-    @ApplicationContext context: Context,
+    @ApplicationContext private val context: Context,
     private val core: Core
 ) : OptionalCoreListener, IManager {
 
@@ -50,9 +53,87 @@ class LinbridgeManager @Inject constructor(
         core.isVideoPreviewEnabled = false
 
         core.setUserAgent(BuildConfig.APPLICATION_ID, BuildConfig.VERSION_NAME)
+        core.tempConfig()
+//        org.linphone.mediastream.Factory.
 
         Timber.i(core.config.dumpAsXml())
     }
+
+    private fun getMicrophoneDevice(
+        output: Boolean = true,
+        types: List<AudioDevice.Type>,
+    ): AudioDevice? {
+        val conference = core.conference
+        val capability = if (output)
+            AudioDevice.Capabilities.CapabilityPlay
+        else
+            AudioDevice.Capabilities.CapabilityRecord
+        val preferredDriver = if (output) {
+            core.defaultOutputAudioDevice?.driverName
+        } else {
+            core.defaultInputAudioDevice?.driverName
+        }
+
+        val extendedAudioDevices = core.extendedAudioDevices
+        Log.i("[Audio Route Helper] Looking for an ${if (output) "output" else "input"} audio device with capability [$capability], driver name [$preferredDriver] and type [$types] in extended audio devices list (size ${extendedAudioDevices.size})")
+        val foundAudioDevice = extendedAudioDevices.find {
+            it.driverName == preferredDriver && types.contains(it.type) && it.hasCapability(capability)
+        }
+        val audioDevice = if (foundAudioDevice == null) {
+            Log.w("[Audio Route Helper] Failed to find an audio device with capability [$capability], driver name [$preferredDriver] and type [$types]")
+            extendedAudioDevices.find {
+                types.contains(it.type) && it.hasCapability(capability)
+            }
+        } else {
+            foundAudioDevice
+        }
+
+        return audioDevice
+    }
+
+    fun useBluetoothDevice() {
+        val headphone = getMicrophoneDevice(types = arrayListOf(AudioDevice.Type.Bluetooth))
+        if (headphone != null) {
+            Timber.i("HOLA: Audio device is not null: ${headphone.deviceName} :: ${headphone.id} :: ${headphone.driverName}")
+            core.playbackDevice = headphone.id
+            core.defaultOutputAudioDevice = headphone
+//            core.defaultInputAudioDevice = headphone
+            core.ringerDevice
+        } else {
+            Timber.i("HOLA: Audio device was null")
+        }
+
+        if (AudioRouteUtils.isBluetoothAudioRouteAvailable(core)) {
+            AudioRouteUtils.routeAudioToBluetooth(core = core)
+        }
+    }
+
+    fun Core.tempConfig() {
+        Timber.i("HOLA: Configuring tempConfig")
+        micGainDb = 1f
+        config.setInt("sound", "ec_tail_len", 300)
+        config.setFloat("sound", "mic_gain_db", 2f)
+        config.setFloat("sound", "playback_gain_db", 3f)
+        if (hasBuiltinEchoCanceller()) {
+            isEchoCancellationEnabled = false
+            isEchoLimiterEnabled = false
+        }
+
+        core.mediastreamerFactory.setDeviceInfo(
+            "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+            org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
+        )
+        core.mediastreamerFactory.setDeviceInfo(
+            "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+            org.linphone.mediastream.Factory.DEVICE_HAS_CRAPPY_AAUDIO, 0, 250
+        )
+        core.mediastreamerFactory.setDeviceInfo(
+            "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+            org.linphone.mediastream.Factory.DEVICE_MCH265_LIMIT_DEQUEUE_OF_OUTPUT_BUFFERS, 0, 250
+        )
+//        org.linphone.mediastream.Factory.set
+    }
+
 
     override fun start() {
         core.start()
@@ -80,7 +161,14 @@ class LinbridgeManager @Inject constructor(
         }
     }
 
-    override fun authenticate(host: String, port: Int, authId: String?, username: String, password: String, proxy: String?) {
+    override fun authenticate(
+        host: String,
+        port: Int,
+        authId: String?,
+        username: String,
+        password: String,
+        proxy: String?
+    ) {
         clearCredentials()
 
         val sipAddress = "sip:$username@$host:$port"
@@ -241,14 +329,36 @@ class LinbridgeManager @Inject constructor(
     }
 
     //<editor-fold desc="CoreListener">
-    override fun onRegistrationStateChanged(core: Core, proxyConfig: ProxyConfig, cstate: RegistrationState?, message: String) {
+    override fun onRegistrationStateChanged(
+        core: Core,
+        proxyConfig: ProxyConfig,
+        cstate: RegistrationState?,
+        message: String
+    ) {
         registrationState = cstate
     }
 
     override fun onCallStateChanged(core: Core, call: Call, cstate: Call.State?, message: String) {
         Timber.i("::: incTimeout = ${core.incTimeout} ::: inCallTimeout = ${core.inCallTimeout}")
-        super.onCallStateChanged(core, call, cstate, message)
         callEndReason = call.reason?.toString()?.let { CallEndReason.valueOf(it) } ?: CallEndReason.None
+        val audioManager = (context.getSystemService(Context.AUDIO_SERVICE) as AudioManager)
+
+        if (cstate == Call.State.IncomingReceived || cstate == Call.State.IncomingEarlyMedia) {
+            Timber.i("HOLA: Incoming|Early Media")
+            (context.getSystemService(Context.AUDIO_SERVICE) as AudioManager).mode =
+                AudioManager.MODE_IN_COMMUNICATION
+        } else if (cstate == Call.State.OutgoingProgress) {
+            Timber.i("HOLA: Outgoing progress")
+        } else if (cstate == Call.State.StreamsRunning) {
+            Timber.i("HOLA: Checking if audio route is available StreamsRunning: ${core.callsNb}")
+            Timber.i("HOLA: Spearker phone state: ${audioManager.isSpeakerphoneOn}")
+            audioManager.isSpeakerphoneOn = true
+        } else if (cstate == Call.State.End || cstate == Call.State.Error || cstate == Call.State.Released) {
+            Timber.i("HOLA: Call was ended")
+            (context.getSystemService(Context.AUDIO_SERVICE) as AudioManager).mode =
+                AudioManager.MODE_NORMAL
+        }
+        super.onCallStateChanged(core, call, cstate, message)
     }
 
     //</editor-fold>
@@ -279,7 +389,7 @@ fun Core.enableCodecs(types: Array<AudioCodec>?) {
         val audioCodec = AudioCodec.getAudioCodecByMimeAndRate(payloadType.mimeType, payloadType.clockRate)
         payloadType.enable(
             (types.isNullOrEmpty() && audioCodec != null) || //  if not specifying codecs to open and the codec is supported by bell
-                    types?.contains(audioCodec) ?: false
+                types?.contains(audioCodec) ?: false
         ) // if codec is in the enabled codecs list
     }
 }
