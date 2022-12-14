@@ -21,9 +21,6 @@ class LinbridgeEventLogger @Inject constructor(
         log("onTransferStateChanged: ")
     }
 
-    override fun onImeeUserRegistration(core: Core, status: Boolean, userId: String, info: String) {
-        log("onImeeUserRegistration: ")
-    }
 
     override fun onFriendListCreated(core: Core, friendList: FriendList) {
         log("onFriendListCreated: ")
@@ -52,10 +49,6 @@ class LinbridgeEventLogger @Inject constructor(
 
     override fun onChatRoomStateChanged(core: Core, chatRoom: ChatRoom, state: ChatRoom.State?) {
         log("onChatRoomStateChanged: ")
-    }
-
-    override fun onAccountRegistrationStateChanged(core: Core, account: Account, state: RegistrationState?, message: String) {
-        log("onAccountRegistrationStateChanged: ")
     }
 
     override fun onBuddyInfoUpdated(core: Core, linphoneFriend: Friend) {
@@ -90,28 +83,12 @@ class LinbridgeEventLogger @Inject constructor(
         log("onMessageReceived: ")
     }
 
-    override fun onConferenceStateChanged(core: Core, conference: Conference, state: Conference.State?) {
-        log("onConferenceStateChanged: ")
-    }
-
-    override fun onConferenceInfoOnSent(core: Core, conferenceInfo: ConferenceInfo) {
-        log("onConferenceInfoOnSent: ")
-    }
-
-    override fun onConferenceInfoOnParticipantSent(core: Core, conferenceInfo: ConferenceInfo, participant: Address) {
-        log("onConferenceInfoOnParticipantSent: ")
-    }
-
     override fun onEcCalibrationResult(core: Core, status: EcCalibratorStatus?, delayMs: Int) {
         log("onEcCalibrationResult: ")
     }
 
     override fun onSubscribeReceived(core: Core, linphoneEvent: Event, subscribeEvent: String, body: Content) {
         log("onSubscribeReceived: ")
-    }
-
-    override fun onAudioDeviceChanged(core: Core, audioDevice: AudioDevice) {
-        log("onAudioDeviceChanged: ")
     }
 
     override fun onInfoReceived(core: Core, call: Call, message: InfoMessage) {
@@ -133,9 +110,6 @@ class LinbridgeEventLogger @Inject constructor(
         log("onReferReceived: ")
     }
 
-    override fun onCallIdUpdated(core: Core, previousCallId: String, currentCallId: String) {
-        log("onCallIdUpdated: ")
-    }
 
     override fun onQrcodeFound(core: Core, result: String?) {
         log("onQrcodeFound: ")
@@ -145,24 +119,12 @@ class LinbridgeEventLogger @Inject constructor(
         log("onConfiguringStatus: ")
     }
 
-    override fun onFirstCallStarted(core: Core) {
-        log("onFirstCallStarted: ")
-    }
-
     override fun onCallCreated(core: Core, call: Call) {
         log("onCallCreated: ")
     }
 
     override fun onPublishStateChanged(core: Core, linphoneEvent: Event, state: PublishState?) {
         log("onPublishStateChanged: ")
-    }
-
-    override fun onAudioDevicesListUpdated(core: Core) {
-        log("onAudioDevicesListUpdated: ")
-    }
-
-    override fun onConferenceInfoOnParticipantError(core: Core, conferenceInfo: ConferenceInfo, participant: Address, error: ConferenceInfoError?) {
-        log("onConferenceInfoOnParticipantError: ")
     }
 
     override fun onCallEncryptionChanged(core: Core, call: Call, on: Boolean, authenticationToken: String?) {
@@ -184,9 +146,6 @@ class LinbridgeEventLogger @Inject constructor(
     override fun onChatRoomSubjectChanged(core: Core, chatRoom: ChatRoom) {
     }
 
-    override fun onLastCallEnded(core: Core) {
-        log("onLastCallEnded: ")
-    }
 
     override fun onVersionUpdateCheckResultReceived(core: Core, result: VersionUpdateCheckResult, version: String?, url: String?) {
         log("onVersionUpdateCheckResultReceived: ")
@@ -206,10 +165,6 @@ class LinbridgeEventLogger @Inject constructor(
 
     override fun onDtmfReceived(core: Core, call: Call, dtmf: Int) {
         log("onDtmfReceived: ")
-    }
-
-    override fun onChatRoomEphemeralMessageDeleted(core: Core, chatRoom: ChatRoom) {
-        log("onChatRoomEphemeralMessageDeleted: ")
     }
 
     override fun onMessageSent(core: Core, chatRoom: ChatRoom, message: ChatMessage) {

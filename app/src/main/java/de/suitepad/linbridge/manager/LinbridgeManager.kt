@@ -47,10 +47,14 @@ class LinbridgeManager @Inject constructor(
         core.clearAllAuthInfo()
         core.clearProxyConfig()
         core.disableChat(Reason.NotImplemented)
-        core.isVideoDisplayEnabled = false
-        core.isVideoCaptureEnabled = false
-        core.isVideoMulticastEnabled = false
-        core.isVideoPreviewEnabled = false
+//        core.isVideoDisplayEnabled = false
+//        core.isVideoCaptureEnabled = false
+//        core.isVideoMulticastEnabled = false
+//        core.isVideoPreviewEnabled = false
+        core.enableVideoCapture(false)
+        core.enableVideoDisplay(false)
+        core.enableVideoMulticast(false)
+        core.enableVideoPreview(false)
 
         core.setUserAgent(BuildConfig.APPLICATION_ID, BuildConfig.VERSION_NAME)
         core.tempConfig()
@@ -59,54 +63,53 @@ class LinbridgeManager @Inject constructor(
         Timber.i(core.config.dumpAsXml())
     }
 
-    private fun getMicrophoneDevice(
-        output: Boolean = true,
-        types: List<AudioDevice.Type>,
-    ): AudioDevice? {
-        val conference = core.conference
-        val capability = if (output)
-            AudioDevice.Capabilities.CapabilityPlay
-        else
-            AudioDevice.Capabilities.CapabilityRecord
-        val preferredDriver = if (output) {
-            core.defaultOutputAudioDevice?.driverName
-        } else {
-            core.defaultInputAudioDevice?.driverName
-        }
+//    private fun getMicrophoneDevice(
+//        output: Boolean = true,
+//        types: List<AudioDevice.Type>,
+//    ): AudioDevice? {
+//        val conference = core.conference
+//        val capability = if (output)
+//            AudioDevice.Capabilities.CapabilityPlay
+//        else
+//            AudioDevice.Capabilities.CapabilityRecord
+//        val preferredDriver = if (output) {
+//            core.defaultOutputAudioDevice?.driverName
+//        } else {
+//            core.defaultInputAudioDevice?.driverName
+//        }
+//
+//        val extendedAudioDevices = core.extendedAudioDevices
+//        Log.i("[Audio Route Helper] Looking for an ${if (output) "output" else "input"} audio device with capability [$capability], driver name [$preferredDriver] and type [$types] in extended audio devices list (size ${extendedAudioDevices.size})")
+//        val foundAudioDevice = extendedAudioDevices.find {
+//            it.driverName == preferredDriver && types.contains(it.type) && it.hasCapability(capability)
+//        }
+//        val audioDevice = if (foundAudioDevice == null) {
+//            Log.w("[Audio Route Helper] Failed to find an audio device with capability [$capability], driver name [$preferredDriver] and type [$types]")
+//            extendedAudioDevices.find {
+//                types.contains(it.type) && it.hasCapability(capability)
+//            }
+//        } else {
+//            foundAudioDevice
+//        }
+//
+//        return audioDevice
+//    }
 
-        val extendedAudioDevices = core.extendedAudioDevices
-        Log.i("[Audio Route Helper] Looking for an ${if (output) "output" else "input"} audio device with capability [$capability], driver name [$preferredDriver] and type [$types] in extended audio devices list (size ${extendedAudioDevices.size})")
-        val foundAudioDevice = extendedAudioDevices.find {
-            it.driverName == preferredDriver && types.contains(it.type) && it.hasCapability(capability)
-        }
-        val audioDevice = if (foundAudioDevice == null) {
-            Log.w("[Audio Route Helper] Failed to find an audio device with capability [$capability], driver name [$preferredDriver] and type [$types]")
-            extendedAudioDevices.find {
-                types.contains(it.type) && it.hasCapability(capability)
-            }
-        } else {
-            foundAudioDevice
-        }
-
-        return audioDevice
-    }
-
-    fun useBluetoothDevice() {
-        val headphone = getMicrophoneDevice(types = arrayListOf(AudioDevice.Type.Bluetooth))
-        if (headphone != null) {
-            Timber.i("HOLA: Audio device is not null: ${headphone.deviceName} :: ${headphone.id} :: ${headphone.driverName}")
-            core.playbackDevice = headphone.id
-            core.defaultOutputAudioDevice = headphone
-//            core.defaultInputAudioDevice = headphone
-            core.ringerDevice
-        } else {
-            Timber.i("HOLA: Audio device was null")
-        }
-
-        if (AudioRouteUtils.isBluetoothAudioRouteAvailable(core)) {
-            AudioRouteUtils.routeAudioToBluetooth(core = core)
-        }
-    }
+//    fun useBluetoothDevice() {
+//        val headphone = getMicrophoneDevice(types = arrayListOf(AudioDevice.Type.Bluetooth))
+//        if (headphone != null) {
+//            Timber.i("HOLA: Audio device is not null: ${headphone.deviceName} :: ${headphone.id} :: ${headphone.driverName}")
+//            core.playbackDevice = headphone.id
+//            core.defaultOutputAudioDevice = headphone
+//            core.ringerDevice
+//        } else {
+//            Timber.i("HOLA: Audio device was null")
+//        }
+//
+//        if (AudioRouteUtils.isBluetoothAudioRouteAvailable(core)) {
+//            AudioRouteUtils.routeAudioToBluetooth(core = core)
+//        }
+//    }
 
     fun Core.tempConfig() {
         Timber.i("HOLA: Configuring tempConfig")
@@ -115,22 +118,22 @@ class LinbridgeManager @Inject constructor(
         config.setFloat("sound", "mic_gain_db", 2f)
         config.setFloat("sound", "playback_gain_db", 3f)
         if (hasBuiltinEchoCanceller()) {
-            isEchoCancellationEnabled = false
-            isEchoLimiterEnabled = false
+//            isEchoCancellationEnabled = false
+//            isEchoLimiterEnabled = false
         }
 
-        core.mediastreamerFactory.setDeviceInfo(
-            "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
-            org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
-        )
-        core.mediastreamerFactory.setDeviceInfo(
-            "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
-            org.linphone.mediastream.Factory.DEVICE_HAS_CRAPPY_AAUDIO, 0, 250
-        )
-        core.mediastreamerFactory.setDeviceInfo(
-            "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
-            org.linphone.mediastream.Factory.DEVICE_MCH265_LIMIT_DEQUEUE_OF_OUTPUT_BUFFERS, 0, 250
-        )
+//        core.mediastreamerFactory.setDeviceInfo(
+//            "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+//            org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
+//        )
+//        core.mediastreamerFactory.setDeviceInfo(
+//            "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+//            org.linphone.mediastream.Factory.DEVICE_HAS_CRAPPY_AAUDIO, 0, 250
+//        )
+//        core.mediastreamerFactory.setDeviceInfo(
+//            "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+//            org.linphone.mediastream.Factory.DEVICE_MCH265_LIMIT_DEQUEUE_OF_OUTPUT_BUFFERS, 0, 250
+//        )
 //        org.linphone.mediastream.Factory.set
     }
 
@@ -210,10 +213,12 @@ class LinbridgeManager @Inject constructor(
         }
         proxyAddress.transport = TransportType.Udp
 
-        proxyConfig.isRegisterEnabled = true
+//        proxyConfig.isRegisterEnabled = true
+        proxyConfig.enableRegister(true)
         proxyConfig.serverAddr = proxyAddress.asStringUriOnly()
         proxyConfig.identityAddress = address
-        proxyConfig.isQualityReportingEnabled = false
+//        proxyConfig.isQualityReportingEnabled = false
+        proxyConfig.enableQualityReporting(false)
         proxyConfig.avpfMode = AVPFMode.Disabled
 
         core.addAuthInfo(authenticationInfo)
@@ -225,7 +230,8 @@ class LinbridgeManager @Inject constructor(
 
     override fun clearCredentials() {
         val account = core.defaultProxyConfig ?: return
-        account.isRegisterEnabled = false
+//        account.isRegisterEnabled = false
+        account.enableRegister(false)
         core.clearProxyConfig()
         core.clearAllAuthInfo()
     }
@@ -317,11 +323,13 @@ class LinbridgeManager @Inject constructor(
     }
 
     override fun mute(muted: Boolean) {
-        core.isMicEnabled = !muted
+//        core.isMicEnabled = !muted
+        core.enableMic(false)
     }
 
     override fun isMuted(): Boolean {
-        return !core.isMicEnabled
+        return core.micEnabled()
+//        return !core.isMicEnabled
     }
 
     override fun getCurrentCallDuration(): Int {
@@ -369,9 +377,9 @@ fun Core.configure(settings: AudioConfiguration) {
     micGainDb = settings.microphoneGain.toFloat()
     playbackGainDb = settings.speakerGain.toFloat()
     if (hasBuiltinEchoCanceller()) {
-        isEchoCancellationEnabled = settings.echoCancellation
+//        isEchoCancellationEnabled = settings.echoCancellation
     }
-    isEchoLimiterEnabled = settings.echoLimiter
+//    isEchoLimiterEnabled = settings.echoLimiter
     //avpfMode = AVPFMode.Disabled
     config.setInt("sound", "el_sustain", settings.echoLimiterSustain)
     config.setString("sound", "el_type", "mic")
@@ -404,8 +412,8 @@ fun Core.getConfiguration(): AudioConfiguration {
     return AudioConfiguration().also {
         it.microphoneGain = micGainDb.toInt()
         it.speakerGain = playbackGainDb.toInt()
-        it.echoCancellation = isEchoCancellationEnabled
-        it.echoLimiter = isEchoLimiterEnabled
+//        it.echoCancellation = isEchoCancellationEnabled
+//        it.echoLimiter = isEchoLimiterEnabled
         it.echoLimiterSustain = config.getInt("sound", "el_sustain", 0)
         it.echoLimiterSpeakerThreshold = config.getFloat("sound", "el_thres", 0f)
         it.echoLimiterMicrophoneDecrease = config.getInt("sound", "el_force", 0)
