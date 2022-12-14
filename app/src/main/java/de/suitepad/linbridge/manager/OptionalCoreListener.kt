@@ -152,5 +152,50 @@ interface OptionalCoreListener : CoreListener {
     }
 
 
+    override fun onAudioDevicesListUpdated(core: Core) {
 
+    }
+
+    override fun onFirstCallStarted(core: Core) {
+
+    }
+
+    override fun onImeeUserRegistration(core: Core, status: Boolean, userId: String, info: String) {
+
+    }
+
+    override fun onChatRoomEphemeralMessageDeleted(core: Core, chatRoom: ChatRoom) {
+    }
+
+    override fun onConferenceStateChanged(core: Core, conference: Conference, state: Conference.State?) {
+
+    }
+
+    override fun onLastCallEnded(core: Core) {
+
+    }
+
+    override fun onAudioDeviceChanged(core: Core, audioDevice: AudioDevice) {
+
+    }
+
+    override fun onCallIdUpdated(core: Core, previousCallId: String, currentCallId: String) {
+
+    }
+
+    override fun onAccountRegistrationStateChanged(core: Core, account: Account, state: RegistrationState?, message: String) {
+
+    }
+
+    override fun onConferenceInfoOnParticipantError(core: Core, conferenceInfo: ConferenceInfo, participant: Address, error: ConferenceInfoError?) {
+
+    }
+
+    override fun onConferenceInfoOnSent(core: Core, conferenceInfo: ConferenceInfo) {
+
+    }
+
+    override fun onConferenceInfoOnParticipantSent(core: Core, conferenceInfo: ConferenceInfo, participant: Address) {
+
+    }
 }
