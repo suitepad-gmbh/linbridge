@@ -2,7 +2,6 @@ package de.suitepad.linbridge.manager
 
 import android.content.Context
 import android.media.AudioManager
-import android.os.Build
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ServiceScoped
 import de.suitepad.linbridge.BuildConfig
@@ -53,10 +52,387 @@ class LinbridgeManager @Inject constructor(
         core.isVideoPreviewEnabled = false
 
         core.setUserAgent(BuildConfig.APPLICATION_ID, BuildConfig.VERSION_NAME)
-        core.tempConfig()
-//        org.linphone.mediastream.Factory.
+        configureMk4()
 
         Timber.i(core.config.dumpAsXml())
+    }
+
+    private fun bareMinimumConfig() {
+        /*
+        * Not that great
+        * */
+        core.mediastreamerFactory.setDeviceInfo(
+            "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+            org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
+        )
+        core.isEchoCancellationEnabled = true
+    }
+
+    private fun configureMk4() {
+        val TEST_ENTRY = 8
+        when (TEST_ENTRY) {
+            1 -> {
+                core.config.setInt("sound", "noisegate", 1)
+                core.config.setFloat("sound", "ng_thres", 0.03f)
+                core.config.setFloat("sound", "ng_floorgain", 0.03f)
+
+                core.isEchoLimiterEnabled = true
+                core.isEchoCancellationEnabled = true
+                core.config.setInt("sound", "echocancellation", 1)
+                core.config.setInt("sound", "echolimiter", 1)
+                core.config.setInt("sound", "agc", 1)
+                core.config.setInt("sound", "ec_tail_len", 300)
+                core.mediastreamerFactory.setDeviceInfo(
+                    "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+                    org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
+                )
+
+                /*
+                * Slight reduction in noise. But not that great with the latest image
+                * */
+            }
+
+            2 -> {
+                core.config.setInt("sound", "noisegate", 1)
+                core.config.setFloat("sound", "ng_thres", 0.03f)
+                core.config.setFloat("sound", "ng_floorgain", 0.03f)
+
+                /*
+                * Disable echo limitter
+                * Disable Android AGC (Automatic Gain control)
+                * */
+                core.isEchoLimiterEnabled = false
+                core.isEchoCancellationEnabled = true
+                core.config.setInt("sound", "echocancellation", 1)
+                core.config.setInt("sound", "echolimiter", 0)
+                core.config.setInt("sound", "agc", 0)
+                core.config.setInt("sound", "ec_tail_len", 300)
+                core.mediastreamerFactory.setDeviceInfo(
+                    "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+                    org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
+                )
+                /*
+                * Doesn't work at all
+                * */
+            }
+
+            22 -> {
+                Timber.i("HOLA: at 22")
+                core.config.setInt("sound", "noisegate", 1)
+                core.config.setFloat("sound", "ng_thres", 0.03f)
+                core.config.setFloat("sound", "ng_floorgain", 0.03f)
+
+                /*
+                * Disable echo limitter
+                * Enable Android AGC (Automatic Gain control)
+                * */
+                core.isEchoLimiterEnabled = false
+                core.isEchoCancellationEnabled = true
+                core.config.setInt("sound", "echocancellation", 1)
+                core.config.setInt("sound", "echolimiter", 0)
+                core.config.setInt("sound", "agc", 1)
+                core.config.setInt("sound", "ec_tail_len", 300)
+                core.mediastreamerFactory.setDeviceInfo(
+                    "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+                    org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
+                )
+                /*
+                * "The 4th one" -> The best one so far was really nice
+                * */
+            }
+
+            222 -> {
+                Timber.i("HOLA: at 22")
+                core.config.setInt("sound", "noisegate", 1)
+                core.config.setFloat("sound", "ng_thres", 0.2f)
+                core.config.setFloat("sound", "ng_floorgain", 0.03f)
+
+                /*
+                * Disable echo limitter
+                * Enable Android AGC (Automatic Gain control)
+                * */
+                core.isEchoLimiterEnabled = false
+                core.isEchoCancellationEnabled = true
+                core.config.setInt("sound", "echocancellation", 1)
+                core.config.setInt("sound", "echolimiter", 0)
+                core.config.setInt("sound", "agc", 1)
+                core.config.setInt("sound", "ec_tail_len", 300)
+                core.mediastreamerFactory.setDeviceInfo(
+                    "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+                    org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
+                )
+                /*
+                * Increased ng_thres dramatically.
+                * The speech quality increased significantly as well.
+                * however, sometimes, the audio was cut off. Like some words were cut off.
+                * */
+            }
+
+            2222 -> {
+                Timber.i("HOLA: at 22")
+                core.config.setInt("sound", "noisegate", 1)
+                core.config.setFloat("sound", "ng_thres", 0.1f)
+                core.config.setFloat("sound", "ng_floorgain", 0.03f)
+
+                /*
+                * Disable echo limitter
+                * Enable Android AGC (Automatic Gain control)
+                * */
+                core.isEchoLimiterEnabled = false
+                core.isEchoCancellationEnabled = true
+                core.config.setInt("sound", "echocancellation", 1)
+                core.config.setInt("sound", "echolimiter", 0)
+                core.config.setInt("sound", "agc", 1)
+                core.config.setInt("sound", "ec_tail_len", 300)
+                core.mediastreamerFactory.setDeviceInfo(
+                    "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+                    org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
+                )
+                /*
+                * Different results on Burak's end and Ankit's end.
+                * On ankit's end the audio was better heard but not at burak's end
+                * */
+            }
+
+            22222 -> {
+                Timber.i("HOLA: at 22")
+                core.config.setInt("sound", "noisegate", 1)
+                core.config.setFloat("sound", "ng_thres", 0.06f)
+                core.config.setFloat("sound", "ng_floorgain", 0.03f)
+
+                /*
+                * Disable echo limitter
+                * Enable Android AGC (Automatic Gain control)
+                * */
+                core.isEchoLimiterEnabled = false
+                core.isEchoCancellationEnabled = true
+                core.config.setInt("sound", "echocancellation", 1)
+                core.config.setInt("sound", "echolimiter", 0)
+                core.config.setInt("sound", "agc", 1)
+                core.config.setInt("sound", "ec_tail_len", 300)
+                core.mediastreamerFactory.setDeviceInfo(
+                    "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+                    org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
+                )
+            }
+
+
+
+            3 -> {
+                Timber.i("HOLA: TEST ENTRY 3")
+                core.config.setInt("sound", "noisegate", 1)
+                core.config.setFloat("sound", "ng_thres", 0.03f)
+                core.config.setFloat("sound", "ng_floorgain", 0.03f)
+
+                /*
+                * Change ec_tail_len to 150
+                * */
+                core.isEchoLimiterEnabled = false
+                core.isEchoCancellationEnabled = true
+                core.config.setInt("sound", "echocancellation", 1)
+                core.config.setInt("sound", "echolimiter", 0)
+                core.config.setInt("sound", "agc", 1)
+                core.config.setInt("sound", "ec_tail_len", 150)
+                core.mediastreamerFactory.setDeviceInfo(
+                    "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+                    org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
+                )
+                /*
+                * Feels comparably better than 4th
+                * */
+            }
+
+            4 -> {
+                core.config.setInt("sound", "noisegate", 1)
+                core.config.setFloat("sound", "ng_thres", 0.03f)
+                core.config.setFloat("sound", "ng_floorgain", 0.03f)
+
+                /*
+                * Change ec_tail_len to 150
+                * */
+                core.isEchoLimiterEnabled = false
+                core.isEchoCancellationEnabled = true
+                core.config.setInt("sound", "echocancellation", 1)
+                core.config.setInt("sound", "echolimiter", 0)
+                core.config.setInt("sound", "agc", 0)
+                core.config.setInt("sound", "ec_tail_len", 150)
+                core.mediastreamerFactory.setDeviceInfo(
+                    "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+                    org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
+                )
+            }
+
+            5 -> {
+                core.isEchoLimiterEnabled = false
+                core.isEchoCancellationEnabled = true
+                core.config.setInt("sound", "echocancellation", 1)
+                core.config.setInt("sound", "echolimiter", 0)
+                core.config.setInt("sound", "agc", 0)
+                core.config.setInt("sound", "ec_tail_len", 300)
+                core.mediastreamerFactory.setDeviceInfo(
+                    "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+                    org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
+                )
+                /*
+                * mk4 -mk4 test: Speech quality is improved. However, a small noise starts as soon as the other end starts
+                * to speak. This is better than the "4th Test" overall.
+                * */
+            }
+
+            6 -> {
+                core.config.setInt("sound", "noisegate", 1)
+                core.config.setFloat("sound", "ng_thres", 0.06f)
+                core.config.setFloat("sound", "ng_floorgain", 0.03f)
+
+                /*
+                * Disable echo limitter
+                * Enable Android AGC (Automatic Gain control)
+                * */
+                core.isEchoLimiterEnabled = false
+                core.isEchoCancellationEnabled = true
+                core.config.setInt("sound", "echocancellation", 1)
+                core.config.setInt("sound", "echolimiter", 0)
+                core.config.setInt("sound", "agc", 1)
+                core.config.setInt("sound", "ec_tail_len", 60)
+                core.config.setInt("sound", "ec_frame_size", 128)
+                core.mediastreamerFactory.setDeviceInfo(
+                    "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+                    org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
+                )
+                /*
+                * Not that nice.
+                * */
+            }
+
+            66 -> {
+                core.config.setInt("sound", "noisegate", 1)
+                core.config.setFloat("sound", "ng_thres", 0.06f)
+                core.config.setFloat("sound", "ng_floorgain", 0.03f)
+
+                /*
+                * Disable echo limitter
+                * Enable Android AGC (Automatic Gain control)
+                * */
+                core.isEchoLimiterEnabled = false
+                core.isEchoCancellationEnabled = true
+                core.config.setInt("sound", "echocancellation", 1)
+                core.config.setInt("sound", "echolimiter", 0)
+                core.config.setInt("sound", "agc", 1)
+                core.config.setInt("sound", "ec_tail_len", 60)
+                core.config.setInt("sound", "ec_frame_size", 256)
+                core.mediastreamerFactory.setDeviceInfo(
+                    "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+                    org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
+                )
+                /*
+                * Not that nice.
+                * */
+            }
+
+            666 -> {
+                core.config.setInt("sound", "noisegate", 1)
+                core.config.setFloat("sound", "ng_thres", 0.06f)
+                core.config.setFloat("sound", "ng_floorgain", 0.03f)
+
+                /*
+                * Disable echo limitter
+                * Enable Android AGC (Automatic Gain control)
+                * */
+                core.isEchoLimiterEnabled = false
+                core.isEchoCancellationEnabled = true
+                core.config.setInt("sound", "echocancellation", 1)
+                core.config.setInt("sound", "echolimiter", 0)
+                core.config.setInt("sound", "agc", 1)
+                core.config.setInt("sound", "ec_tail_len", 150)
+                core.config.setInt("sound", "ec_frame_size", 256)
+                core.mediastreamerFactory.setDeviceInfo(
+                    "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+                    org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
+                )
+                /*
+                * Not that nice.
+                * */
+            }
+
+            7 -> {
+                Timber.i("HOLA: at 7")
+                core.config.setInt("sound", "noisegate", 1)
+                core.config.setFloat("sound", "ng_thres", 0.06f)
+                core.config.setFloat("sound", "ng_floorgain", 0.03f)
+
+                /*
+                * Disable echo limitter
+                * Enable Android AGC (Automatic Gain control)
+                * */
+                core.isEchoLimiterEnabled = false
+                core.isEchoCancellationEnabled = true
+                core.config.setInt("sound", "echocancellation", 1)
+                core.config.setInt("sound", "echolimiter", 0)
+                core.config.setInt("sound", "agc", 1)
+                core.config.setInt("sound", "ec_tail_len", 200)
+                core.mediastreamerFactory.setDeviceInfo(
+                    "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+                    org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
+                )
+            }
+
+            8 -> {
+                Timber.i("HOLA: at 8")
+                core.config.setInt("sound", "noisegate", 1)
+                core.config.setFloat("sound", "ng_thres", 0.06f)
+                core.config.setFloat("sound", "ng_floorgain", 0.03f)
+
+                /*
+                * Disable echo limitter
+                * Enable Android AGC (Automatic Gain control)
+                * */
+                core.isEchoLimiterEnabled = false
+                core.isEchoCancellationEnabled = true
+                core.config.setInt("sound", "echocancellation", 1)
+                core.config.setInt("sound", "echolimiter", 0)
+                core.config.setInt("sound", "agc", 1)
+                core.config.setInt("sound", "ec_tail_len", 250)
+                core.mediastreamerFactory.setDeviceInfo(
+                    "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+                    org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
+                )
+            }
+
+            else -> {
+
+            }
+        }
+    }
+
+//
+//    Noise reduction
+//    noisegate=1 : This means that noise reduction is turned on, and there will be background sound when it is not turned on
+//    ng_thres=0.03: This means that the sound above the threshold can pass, which is used to judge which is noise
+//    ng_floorgain=0.03: This indicates that the sound below the threshold is used for gain to compensate for the sound that is too small to be eaten
+
+    private fun setOpenSlesDevice() {
+        val slesOutputDevice =
+            core.extendedAudioDevices.find {
+                it.driverName == "openSLES" && it.hasCapability(AudioDevice.Capabilities.CapabilityPlay)
+            }
+        val slesInputDevice =
+            core.extendedAudioDevices.find {
+                it.driverName == "openSLES" && it.hasCapability(AudioDevice.Capabilities.CapabilityRecord)
+            }
+
+        if (slesOutputDevice != null) {
+            Timber.i("HOLA: Output device was not null")
+            core.defaultOutputAudioDevice = slesOutputDevice
+        } else {
+            Timber.i("HOLA: Output device was null")
+        }
+
+        if (slesInputDevice != null) {
+            Timber.i("HOLA: Input device was not null")
+            core.defaultInputAudioDevice = slesInputDevice
+        } else {
+            Timber.i("HOLA: Input device was null")
+        }
     }
 
     private fun getMicrophoneDevice(
@@ -114,9 +490,13 @@ class LinbridgeManager @Inject constructor(
         config.setInt("sound", "ec_tail_len", 300)
         config.setFloat("sound", "mic_gain_db", 2f)
         config.setFloat("sound", "playback_gain_db", 3f)
-        if (hasBuiltinEchoCanceller()) {
-            isEchoCancellationEnabled = false
-            isEchoLimiterEnabled = false
+//        if (hasBuiltinEchoCanceller()) {
+            isEchoCancellationEnabled = true
+            isEchoLimiterEnabled = true
+//        }
+
+        if(hasBuiltinEchoCanceller()) {
+            Timber.i("HOLA: HARDWARE ECHO CANCELLATION IS AVAILABLE")
         }
 
         core.mediastreamerFactory.setDeviceInfo(
@@ -339,29 +719,35 @@ class LinbridgeManager @Inject constructor(
     }
 
     override fun onCallStateChanged(core: Core, call: Call, cstate: Call.State?, message: String) {
-        Timber.i("::: incTimeout = ${core.incTimeout} ::: inCallTimeout = ${core.inCallTimeout}")
         callEndReason = call.reason?.toString()?.let { CallEndReason.valueOf(it) } ?: CallEndReason.None
         val audioManager = (context.getSystemService(Context.AUDIO_SERVICE) as AudioManager)
 
         if (cstate == Call.State.IncomingReceived || cstate == Call.State.IncomingEarlyMedia) {
-            Timber.i("HOLA: Incoming|Early Media")
-            (context.getSystemService(Context.AUDIO_SERVICE) as AudioManager).mode =
-                AudioManager.MODE_IN_COMMUNICATION
+//            audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+            routeAudioToBluetooth(call)
         } else if (cstate == Call.State.OutgoingProgress) {
-            Timber.i("HOLA: Outgoing progress")
+//            audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+            routeAudioToBluetooth(call)
         } else if (cstate == Call.State.StreamsRunning) {
-            Timber.i("HOLA: Checking if audio route is available StreamsRunning: ${core.callsNb}")
-            Timber.i("HOLA: Spearker phone state: ${audioManager.isSpeakerphoneOn}")
-            audioManager.isSpeakerphoneOn = true
+//            routeAudioToBluetooth(call)
         } else if (cstate == Call.State.End || cstate == Call.State.Error || cstate == Call.State.Released) {
             Timber.i("HOLA: Call was ended")
-            (context.getSystemService(Context.AUDIO_SERVICE) as AudioManager).mode =
-                AudioManager.MODE_NORMAL
+//            audioManager.mode = AudioManager.MODE_NORMAL
         }
         super.onCallStateChanged(core, call, cstate, message)
     }
 
     //</editor-fold>
+
+    fun routeAudioToBluetooth(call: Call?) {
+//        if (core.callsNb == 1) {
+//            if (AudioRouteUtils.isBluetoothAudioRouteAvailable(core)) {
+//                AudioRouteUtils.routeAudioToBluetooth(call, core = core)
+//            } else {
+//                Timber.i("HOLA: Headset is not available")
+//            }
+//        }
+    }
 
 }
 
