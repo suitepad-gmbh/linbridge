@@ -19,9 +19,6 @@
  */
 package de.suitepad.linbridge.manager
 
-import android.content.Context
-import android.media.AudioManager
-import android.os.Build
 import android.telecom.CallAudioState
 import org.linphone.core.AudioDevice
 import org.linphone.core.Call
@@ -30,18 +27,6 @@ import org.linphone.core.tools.Log
 import timber.log.Timber
 
 object AudioRouteUtils {
-    fun isHeadsetAudioRouteAvailable(core: Core): Boolean {
-        for (audioDevice in core.audioDevices) {
-            if ((audioDevice.type == AudioDevice.Type.Headset || audioDevice.type == AudioDevice.Type.Headphones) &&
-                audioDevice.hasCapability(AudioDevice.Capabilities.CapabilityPlay)
-            ) {
-                Log.i("[Audio Route Helper] Found headset/headphones audio device [${audioDevice.deviceName} (${audioDevice.driverName})]")
-                return true
-            }
-        }
-        return false
-    }
-
     fun isBluetoothAudioRouteAvailable(core: Core): Boolean {
         for (audioDevice in core.audioDevices) {
             if (audioDevice.type == AudioDevice.Type.Bluetooth &&
@@ -53,31 +38,17 @@ object AudioRouteUtils {
         }
         return false
     }
-
-    fun routeAudioToHeadset(call: Call? = null, skipTelecom: Boolean = false, core: Core) {
-        routeAudioTo(call, arrayListOf(AudioDevice.Type.Headphones, AudioDevice.Type.Headset), skipTelecom, core = core)
-    }
-
-    fun routeAudioToBluetooth(call: Call? = null, skipTelecom: Boolean = false, core: Core) {
-        routeAudioTo(call, arrayListOf(AudioDevice.Type.Bluetooth), skipTelecom, core = core)
+    fun routeAudioToBluetooth(call: Call? = null, core: Core) {
+        routeAudioTo(call, arrayListOf(AudioDevice.Type.Bluetooth), core = core)
     }
 
     private fun routeAudioTo(
         call: Call?,
         types: List<AudioDevice.Type>,
-        skipTelecom: Boolean = false,
         core: Core,
     ) {
-        val route = when (types.first()) {
-            AudioDevice.Type.Earpiece -> CallAudioState.ROUTE_EARPIECE
-            AudioDevice.Type.Speaker -> CallAudioState.ROUTE_SPEAKER
-            AudioDevice.Type.Headphones, AudioDevice.Type.Headset -> CallAudioState.ROUTE_WIRED_HEADSET
-            AudioDevice.Type.Bluetooth, AudioDevice.Type.BluetoothA2DP -> CallAudioState.ROUTE_BLUETOOTH
-            else -> CallAudioState.ROUTE_WIRED_OR_EARPIECE
-        }
-
         applyAudioRouteChange(call, types, core = core)
-        changeCaptureDeviceToMatchAudioRoute(call, types, core = core)
+//        changeCaptureDeviceToMatchAudioRoute(call, types, core = core)
     }
 
     private fun applyAudioRouteChange(
@@ -93,17 +64,19 @@ object AudioRouteUtils {
             Log.w("[Audio Route Helper] No call found, setting audio route on Core")
             null
         }
-        val conference = core.conference
+
         val capability = if (output)
             AudioDevice.Capabilities.CapabilityPlay
         else
             AudioDevice.Capabilities.CapabilityRecord
+
         val preferredDriver = if (output) {
             core.defaultOutputAudioDevice?.driverName
         } else {
             core.defaultInputAudioDevice?.driverName
         }
 
+        Log.w("[Audio Route Helper] PREFERRED_DRIVER:: ${preferredDriver}")
         val extendedAudioDevices = core.extendedAudioDevices
         Log.i("[Audio Route Helper] Looking for an ${if (output) "output" else "input"} audio device with capability [$capability], driver name [$preferredDriver] and type [$types] in extended audio devices list (size ${extendedAudioDevices.size})")
         val foundAudioDevice = extendedAudioDevices.find {
@@ -126,11 +99,7 @@ object AudioRouteUtils {
             }
             return
         }
-        if (conference != null && conference.isIn) {
-            Log.i("[Audio Route Helper] Found [${audioDevice.type}] ${if (output) "playback" else "recorder"} audio device [${audioDevice.deviceName} (${audioDevice.driverName})], routing conference audio to it")
-            if (output) conference.outputAudioDevice = audioDevice
-            else conference.inputAudioDevice = audioDevice
-        } else if (currentCall != null) {
+        if (currentCall != null) {
             Log.i("[Audio Route Helper] Found [${audioDevice.type}] ${if (output) "playback" else "recorder"} audio device [${audioDevice.deviceName} (${audioDevice.driverName})], routing call audio to it")
             if (output) currentCall.outputAudioDevice = audioDevice
             else currentCall.inputAudioDevice = audioDevice
@@ -149,21 +118,6 @@ object AudioRouteUtils {
                     applyAudioRouteChange(call, arrayListOf(AudioDevice.Type.Bluetooth), false, core = core)
                 }
             }
-            AudioDevice.Type.Headset, AudioDevice.Type.Headphones -> {
-                if (isHeadsetAudioRecorderAvailable(core)) {
-                    Log.i("[Audio Route Helper] Headphones/Headset device is able to record audio, also change input audio device")
-                    applyAudioRouteChange(
-                        call,
-                        (arrayListOf(AudioDevice.Type.Headphones, AudioDevice.Type.Headset)),
-                        false,
-                        core = core
-                    )
-                }
-            }
-            AudioDevice.Type.Earpiece, AudioDevice.Type.Speaker -> {
-                Log.i("[Audio Route Helper] Audio route requested to Earpiece or Speaker, setting input to Microphone")
-                applyAudioRouteChange(call, (arrayListOf(AudioDevice.Type.Microphone)), false, core = core)
-            }
             else -> {
                 Log.w("[Audio Route Helper] Unexpected audio device type: ${types.first()}")
             }
@@ -181,39 +135,27 @@ object AudioRouteUtils {
         }
         return false
     }
-
-    private fun isHeadsetAudioRecorderAvailable(core: Core): Boolean {
-        for (audioDevice in core.audioDevices) {
-            if ((audioDevice.type == AudioDevice.Type.Headset || audioDevice.type == AudioDevice.Type.Headphones) &&
-                audioDevice.hasCapability(AudioDevice.Capabilities.CapabilityRecord)
-            ) {
-                Log.i("[Audio Route Helper] Found headset/headphones audio recorder [${audioDevice.deviceName} (${audioDevice.driverName})]")
-                return true
-            }
-        }
-        return false
-    }
 }
 
 // backup
-fun routeAudio(core: Core, context: Context, call: Call) {
-    if (core.callsNb == 1) {
-        if (AudioRouteUtils.isHeadsetAudioRouteAvailable(core)) {
-            Timber.i("HOLA: Headset available")
-            AudioRouteUtils.routeAudioToHeadset(call, core = core)
-        } else if (AudioRouteUtils.isBluetoothAudioRouteAvailable(core)) {
-            Timber.i("HOLA: Bluetooth audio route is available")
-            AudioRouteUtils.routeAudioToBluetooth(call, core = core)
-            val audioManager = (context.getSystemService(Context.AUDIO_SERVICE) as AudioManager)
-            audioManager.mode = AudioManager.MODE_IN_CALL
-            Timber.i("HOLA: mode = ${audioManager.mode} |")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                audioManager.activePlaybackConfigurations.forEach {
-                    Timber.i("HOLA: attribute::: ${it.audioAttributes}")
-                }
-            }
-        } else {
-            Timber.i("HOLA: Headset is not available")
-        }
-    }
-}
+//fun routeAudio(core: Core, context: Context, call: Call) {
+//    if (core.callsNb == 1) {
+//        if (AudioRouteUtils.isHeadsetAudioRouteAvailable(core)) {
+//            Timber.i("HOLA: Headset available")
+//            AudioRouteUtils.routeAudioToHeadset(call, core = core)
+//        } else if (AudioRouteUtils.isBluetoothAudioRouteAvailable(core)) {
+//            Timber.i("HOLA: Bluetooth audio route is available")
+//            AudioRouteUtils.routeAudioToBluetooth(call, core = core)
+//            val audioManager = (context.getSystemService(Context.AUDIO_SERVICE) as AudioManager)
+//            audioManager.mode = AudioManager.MODE_IN_CALL
+//            Timber.i("HOLA: mode = ${audioManager.mode} |")
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//                audioManager.activePlaybackConfigurations.forEach {
+//                    Timber.i("HOLA: attribute::: ${it.audioAttributes}")
+//                }
+//            }
+//        } else {
+//            Timber.i("HOLA: Headset is not available")
+//        }
+//    }
+//}
