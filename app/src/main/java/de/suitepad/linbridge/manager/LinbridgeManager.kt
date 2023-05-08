@@ -1,6 +1,7 @@
 package de.suitepad.linbridge.manager
 
 import android.content.Context
+import android.os.Build
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ServiceScoped
 import de.suitepad.linbridge.api.AudioConfiguration
@@ -50,6 +51,7 @@ class LinbridgeManager @Inject constructor(
         core.isVideoPreviewEnabled = false
 
         core.setUserAgent(BuildConfig.APPLICATION_ID, BuildConfig.VERSION_NAME)
+        core.maybeConfigureDevice()
 
         Timber.i(core.config.dumpAsXml())
     }
@@ -301,5 +303,27 @@ fun Core.getConfiguration(): AudioConfiguration {
         it.echoLimiterMicrophoneDecrease = config.getInt("sound", "el_force", 0)
         it.echoLimiterDoubleTalkDetection = config.getFloat("sound", "el_transmit_threshold", 0f)
         it.enabledCodecs = getEnabledCodecs()
+    }
+}
+
+fun Core.maybeConfigureDevice() {
+    when (Build.VERSION.SDK_INT) {
+        Build.VERSION_CODES.Q -> {
+            isEchoLimiterEnabled = false
+            isEchoCancellationEnabled = true
+
+            config.setInt("sound", "noisegate", 1)
+            config.setFloat("sound", "ng_thres", 0.06f)
+            config.setFloat("sound", "ng_floorgain", 0.03f)
+
+            config.setInt("sound", "echocancellation", 1)
+            config.setInt("sound", "echolimiter", 0)
+            config.setInt("sound", "agc", 1)
+            config.setInt("sound", "ec_tail_len", 250)
+            mediastreamerFactory.setDeviceInfo(
+                "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
+                org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
+            )
+        }
     }
 }
