@@ -1,4 +1,8 @@
 # CHANGELOG
+### 2.0.2
+- FIX: set allowBackup to false
+- FIX: Configure mk4 device for better audio
+
 ### 2.0.1
 - FIX: linbridge crash
 - FIX: receiver says busy after ringing for 1-2 seconds

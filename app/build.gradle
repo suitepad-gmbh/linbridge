@@ -38,8 +38,8 @@ android {
         minSdkVersion 23
         targetSdkVersion 32
 
-        versionCode 2000140
-        versionName "2.0.1"
+        versionCode 2000240
+        versionName "2.0.2"
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         buildConfigField 'String', 'SENDGRID_MAIL_TO', "\"${getDestinationEmailAddress()}\""
