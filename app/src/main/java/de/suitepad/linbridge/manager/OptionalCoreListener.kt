@@ -43,9 +43,6 @@ interface OptionalCoreListener : CoreListener {
 
     }
 
-    override fun onNotifyReceived(core: Core, linphoneEvent: Event, notifiedEvent: String, body: Content) {
-
-    }
 
     override fun onNewSubscriptionRequested(core: Core, linphoneFriend: Friend, url: String) {
 
@@ -70,10 +67,6 @@ interface OptionalCoreListener : CoreListener {
 
     }
 
-    override fun onSubscribeReceived(core: Core, linphoneEvent: Event, subscribeEvent: String, body: Content) {
-
-    }
-
     override fun onInfoReceived(core: Core, call: Call, message: InfoMessage) {
 
     }
@@ -83,10 +76,6 @@ interface OptionalCoreListener : CoreListener {
     }
 
     override fun onFriendListRemoved(core: Core, friendList: FriendList) {
-
-    }
-
-    override fun onReferReceived(core: Core, referTo: String) {
 
     }
 
@@ -184,18 +173,6 @@ interface OptionalCoreListener : CoreListener {
     }
 
     override fun onAccountRegistrationStateChanged(core: Core, account: Account, state: RegistrationState?, message: String) {
-
-    }
-
-    override fun onConferenceInfoOnParticipantError(core: Core, conferenceInfo: ConferenceInfo, participant: Address, error: ConferenceInfoError?) {
-
-    }
-
-    override fun onConferenceInfoOnSent(core: Core, conferenceInfo: ConferenceInfo) {
-
-    }
-
-    override fun onConferenceInfoOnParticipantSent(core: Core, conferenceInfo: ConferenceInfo, participant: Address) {
 
     }
 }
