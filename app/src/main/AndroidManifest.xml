@@ -39,6 +39,7 @@
             android:name=".BridgeService"
             android:enabled="true"
             android:exported="true"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:foregroundServiceType="microphone|phoneCall">
             <intent-filter>
                 <action android:name="de.suitepad.linbridge.BridgeService" />

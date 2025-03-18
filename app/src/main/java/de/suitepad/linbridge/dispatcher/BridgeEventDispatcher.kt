@@ -43,10 +43,6 @@ class BridgeEventDispatcher @Inject constructor() : OptionalCoreListener, IBridg
         TODO("Not yet implemented")
     }
 
-    override fun onSubscribeReceived(core: Core, linphoneEvent: Event, subscribeEvent: String, body: Content) {
-        Timber.i("onSubscribeReceived: $subscribeEvent")
-    }
-
     override fun onSubscribeReceived(core: Core, linphoneEvent: Event, subscribeEvent: String, body: Content?) {
         TODO("Not yet implemented")
     }

@@ -8,7 +8,7 @@ apply plugin: 'dagger.hilt.android.plugin'
 apply plugin: 'suitepad-gradletools-repos'
 //apply plugin: 'suitepad-gradletools-signing'
 
-apply from: '../release.gradle'
+//apply from: '../release.gradle'
 
 def getDestinationEmailAddress() {
     Properties properties = new Properties()
@@ -65,11 +65,9 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
-
-//    dataBinding {
-//        enabled = true
-//    }
-
+    buildFeatures {
+        viewBinding true
+    }
     buildFeatures {
         buildConfig = true
     }
@@ -89,7 +87,7 @@ dependencies {
     implementation 'de.suitepad:linbridge-api:1.1.1'
     // Here is the versions: https://download.linphone.org/releases/android/maven_repository/org/linphone/linphone-sdk-android/
     implementation "org.linphone.no-video:linphone-sdk-android:5.4.0"
-    implementation "androidx.appcompat:appcompat:1.4.1"
+    implementation "androidx.appcompat:appcompat:1.7.0"
     implementation "androidx.constraintlayout:constraintlayout:2.1.4"
     implementation "com.jakewharton.timber:timber:5.0.1"
     implementation ("com.github.danysantiago:sendgrid-android:1") {
@@ -115,9 +113,5 @@ dependencies {
     implementation platform('com.google.firebase:firebase-bom:27.1.0')
     implementation 'com.google.firebase:firebase-crashlytics-ktx'
 }
-//tasks.register('validateSigningRelease') {
-//    doLast {
-//        println 'validateSigningRelease task executed'
-//    }
-//}
+
 apply plugin: 'com.google.gms.google-services'
