@@ -113,7 +113,7 @@ dependencies {
 
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:27.1.0"))
-    implementation("com.google.firebase:firebase-crashlytics-ktx")
+    implementation("com.google.firebase:firebase-crashlytics-ktx:17.1.0")
 }
 
 apply(plugin = "com.google.gms.google-services")
