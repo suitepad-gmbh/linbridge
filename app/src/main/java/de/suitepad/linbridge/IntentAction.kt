@@ -59,7 +59,7 @@ enum class IntentAction(val routine: (bridge: IBridgeService, bundle: Bundle?) -
             echoLimiterSpeakerThreshold = bundle?.getFloat(EXTRA_EL_SPEAKER_THRESHOLD, 1.0f) ?: 1.0f
             echoLimiterSustain = bundle?.getInt(EXTRA_EL_SUSTAIN, 0) ?: 0
             enabledCodecs = bundle?.getStringArray(EXTRA_LIST_CODEC_ENABLED)?.map { AudioCodec.valueOf(it) }?.toTypedArray()
-            microphoneGain = bundle?.getInt(EXTRA_MICROPHONE_GAIN, 0) ?: 0
+            microphoneGain = bundle?.getInt(EXTRA_MICROPHONE_GAIN, 5) ?: 5
             speakerGain = bundle?.getInt(EXTRA_SPEAKER_GAIN, 0) ?: 0
         })
     }),

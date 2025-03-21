@@ -1,17 +1,18 @@
 package de.suitepad.linbridge
 
+import android.Manifest
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.appcompat.app.AlertDialog
 import android.text.Html
 import android.view.View
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
 import com.sendgrid.SendGrid
-import de.suitepad.linbridge.BuildConfig
+import de.suitepad.linbridge.databinding.ActivityMainBinding
+import de.suitepad.linbridge.databinding.DialogSendlogsBinding
 import de.suitepad.linbridge.helper.LogsExportHelper
 import de.suitepad.linbridge.logger.LogCatcher
-import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.dialog_sendlogs.view.*
 import kotlinx.coroutines.*
 
 class MainActivity : AppCompatActivity(), LogCatcher.LogListener {
@@ -21,10 +22,19 @@ class MainActivity : AppCompatActivity(), LogCatcher.LogListener {
     }
 
     var cachedLog: String = ""
+    private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        ActivityCompat.requestPermissions(this, arrayOf(
+            Manifest.permission.RECORD_AUDIO,
+        ), 123)
+
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        binding.sendButton.setOnClickListener {
+            sendButton()
+        }
     }
 
     override fun onResume() {
@@ -39,17 +49,17 @@ class MainActivity : AppCompatActivity(), LogCatcher.LogListener {
 
     @Suppress("DEPRECATION")
     fun setLog(message: String) {
-        logText.text = Html.fromHtml(message)
+        binding.logText.text = Html.fromHtml(message)
     }
 
     fun scrollToBottom() {
-        logScroller.post {
-            logScroller.fullScroll(View.FOCUS_DOWN)
+        binding.logScroller.post {
+            binding.logScroller.fullScroll(View.FOCUS_DOWN)
         }
     }
 
     fun isAnchoredToBottom(): Boolean {
-        return ((logScroller.scrollY + logScroller.measuredHeight) - logText.height) == 0
+        return ((binding.logScroller.scrollY + binding.logScroller.measuredHeight) - binding.logText.height) == 0
     }
 
     override fun log(message: String, replaceLastLine: Boolean) {
@@ -78,8 +88,8 @@ class MainActivity : AppCompatActivity(), LogCatcher.LogListener {
         return (application as BridgeApplication).logCatcher
     }
 
-    fun sendButton(view: View) {
-        val view = View.inflate(this, R.layout.dialog_sendlogs, null)
+    fun sendButton() {
+        val dialogBinding = DialogSendlogsBinding.inflate(layoutInflater)
         val dialog = AlertDialog.Builder(this)
                 .setNegativeButton("cancel") { dialog, which ->
                     dialog.dismiss()
@@ -87,14 +97,14 @@ class MainActivity : AppCompatActivity(), LogCatcher.LogListener {
                     GlobalScope.launch(Dispatchers.Main) {
                         LogsExportHelper(SendGrid(BuildConfig.SENDGRID_API_KEY)).also {
                             it.logs = cachedLog
-                            it.hotelName = view.hotelName.text.toString()
-                            it.description = view.logsDescription.text.toString()
+                            it.hotelName = dialogBinding.hotelName.text.toString()
+                            it.description = dialogBinding.logsDescription.text.toString()
                         }.sendIt()
                         Toast.makeText(this@MainActivity, "logs successfully uploaded", Toast.LENGTH_LONG).show()
                     }.start()
                     dialog.dismiss()
                 }.setTitle("Send logs to SuitePad")
-                .setView(view)
+                //.setView(this@MainActivity)
                 .create()
         dialog.show()
     }
