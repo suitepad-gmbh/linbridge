@@ -40,11 +40,11 @@ class BridgeEventDispatcher @Inject constructor() : OptionalCoreListener, IBridg
     }
 
     override fun onNotifyReceived(core: Core, linphoneEvent: Event, notifiedEvent: String, body: Content?) {
-        TODO("Not yet implemented")
+        Timber.i("onNotifyReceived: ${linphoneEvent.name}")
     }
 
     override fun onSubscribeReceived(core: Core, linphoneEvent: Event, subscribeEvent: String, body: Content?) {
-        TODO("Not yet implemented")
+       Timber.i("onSubscribeReceived: $subscribeEvent")
     }
 
     override fun onRegistrationStateChanged(core: Core, proxyConfig: ProxyConfig, cstate: RegistrationState?, message: String) {
@@ -67,7 +67,7 @@ class BridgeEventDispatcher @Inject constructor() : OptionalCoreListener, IBridg
     }
 
     override fun onReferReceived(core: Core, referToAddr: Address, customHeaders: Headers, content: Content?) {
-        TODO("Not yet implemented")
+        Timber.i("onReferReceived: $referToAddr")
     }
 
     override fun onConfiguringStatus(core: Core, status: ConfiguringState?, message: String?) {
@@ -99,19 +99,19 @@ class BridgeEventDispatcher @Inject constructor() : OptionalCoreListener, IBridg
     }
 
     override fun onConferenceInfoReceived(core: Core, conferenceInfo: ConferenceInfo) {
-        TODO("Not yet implemented")
+        Timber.i("onConferenceInfoReceived: $conferenceInfo")
     }
 
     override fun onPushNotificationReceived(core: Core, payload: String?) {
-        TODO("Not yet implemented")
+        Timber.i("onPushNotificationReceived: $payload")
     }
 
     override fun onPreviewDisplayErrorOccurred(core: Core, errorCode: Int) {
-        TODO("Not yet implemented")
+        Timber.i("onPreviewDisplayErrorOccurred: $errorCode")
     }
 
     override fun onRemainingNumberOfFileTransferChanged(core: Core, downloadCount: Int, uploadCount: Int) {
-        TODO("Not yet implemented")
+        Timber.i("onRemainingNumberOfFileTransferChanged: download $downloadCount upload $uploadCount")
     }
 
     override fun onNewMessageReaction(
@@ -120,62 +120,62 @@ class BridgeEventDispatcher @Inject constructor() : OptionalCoreListener, IBridg
         message: ChatMessage,
         reaction: ChatMessageReaction
     ) {
-        TODO("Not yet implemented")
+        Timber.i("onNewMessageReaction: $reaction")
     }
 
     override fun onReactionRemoved(core: Core, chatRoom: ChatRoom, message: ChatMessage, address: Address) {
-        TODO("Not yet implemented")
+        Timber.i("onReactionRemoved: $address")
     }
 
     override fun onMessagesReceived(core: Core, chatRoom: ChatRoom, messages: Array<out ChatMessage>) {
-        TODO("Not yet implemented")
+        Timber.i("onMessagesReceived: ${messages.size}")
     }
 
     override fun onChatRoomSessionStateChanged(core: Core, chatRoom: ChatRoom, state: Call.State?, message: String) {
-        TODO("Not yet implemented")
+        Timber.i("onChatRoomSessionStateChanged: $state $message")
     }
 
     override fun onCallGoclearAckSent(core: Core, call: Call) {
-        TODO("Not yet implemented")
+        Timber.i("onCallGoclearAckSent: $call")
     }
 
     override fun onCallSendMasterKeyChanged(core: Core, call: Call, masterKey: String?) {
-        TODO("Not yet implemented")
+        Timber.i("onCallSendMasterKeyChanged: $masterKey")
     }
 
     override fun onCallReceiveMasterKeyChanged(core: Core, call: Call, masterKey: String?) {
-        TODO("Not yet implemented")
+        Timber.i("onCallReceiveMasterKeyChanged: $masterKey")
     }
 
     override fun onNotifySent(core: Core, linphoneEvent: Event, body: Content?) {
-        TODO("Not yet implemented")
+        Timber.i("onNotifySent: ${linphoneEvent.name}")
     }
 
     override fun onPublishReceived(core: Core, linphoneEvent: Event, publishEvent: String, body: Content?) {
-        TODO("Not yet implemented")
+        Timber.i("onPublishReceived: $publishEvent")
     }
 
     override fun onDefaultAccountChanged(core: Core, account: Account?) {
-        TODO("Not yet implemented")
+        Timber.i("onDefaultAccountChanged: $account")
     }
 
     override fun onAccountAdded(core: Core, account: Account) {
-        TODO("Not yet implemented")
+        Timber.i("onAccountAdded: $account")
     }
 
     override fun onAccountRemoved(core: Core, account: Account) {
-        TODO("Not yet implemented")
+        Timber.i("onAccountRemoved: $account")
     }
 
     override fun onMessageWaitingIndicationChanged(core: Core, lev: Event, mwi: MessageWaitingIndication) {
-        TODO("Not yet implemented")
+        Timber.i("onMessageWaitingIndicationChanged: $mwi")
     }
 
     override fun onSnapshotTaken(core: Core, filePath: String) {
-        TODO("Not yet implemented")
+        Timber.i("onSnapshotTaken: $filePath")
     }
 
     override fun onNewAlertTriggered(core: Core, alert: Alert) {
-        TODO("Not yet implemented")
+        Timber.i("onNewAlertTriggered: $alert")
     }
 }
