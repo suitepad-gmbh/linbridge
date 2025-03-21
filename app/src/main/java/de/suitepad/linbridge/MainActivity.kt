@@ -1,11 +1,13 @@
 package de.suitepad.linbridge
 
+import android.Manifest
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.appcompat.app.AlertDialog
 import android.text.Html
 import android.view.View
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
 import com.sendgrid.SendGrid
 import de.suitepad.linbridge.databinding.ActivityMainBinding
 import de.suitepad.linbridge.databinding.DialogSendlogsBinding
@@ -24,6 +26,10 @@ class MainActivity : AppCompatActivity(), LogCatcher.LogListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ActivityCompat.requestPermissions(this, arrayOf(
+            Manifest.permission.RECORD_AUDIO,
+        ), 123)
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.sendButton.setOnClickListener {

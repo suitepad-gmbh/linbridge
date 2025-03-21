@@ -1,7 +1,9 @@
 package de.suitepad.linbridge.manager
 
 import android.content.Context
+import android.media.AudioManager
 import android.os.Build
+import androidx.annotation.RequiresApi
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ServiceScoped
 import de.suitepad.linbridge.api.AudioConfiguration
@@ -12,10 +14,11 @@ import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
 
+@RequiresApi(Build.VERSION_CODES.O)
 @ServiceScoped
 class LinbridgeManager @Inject constructor(
     @ApplicationContext context: Context,
-    private val core: Core
+    private val core: Core,
 ) : OptionalCoreListener, IManager {
 
     var registrationState: RegistrationState? = null
@@ -24,6 +27,10 @@ class LinbridgeManager @Inject constructor(
 
     val keepAliveTask = object : TimerTask() {
         override fun run() {
+            val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+            audioManager.isMicrophoneMute = false
+            audioManager.isSpeakerphoneOn = false
             core.iterate()
         }
     }
@@ -57,6 +64,7 @@ class LinbridgeManager @Inject constructor(
     }
 
     override fun start() {
+        core.isMicEnabled = true
         core.start()
         iterate()
     }
@@ -173,7 +181,16 @@ class LinbridgeManager @Inject constructor(
 
     override fun answerCall(): CallError? {
         val currentCall = core.currentCall ?: return CallError.NoCallAvailable
-        currentCall.accept()
+        val params = core.createCallParams(null) ?: TODO()
+        params.isAudioEnabled = true
+        params.isVideoEnabled = true
+        params.isMicEnabled = true
+        params.isAudioEnabled = true
+        params.audioDirection = MediaDirection.SendRecv
+        params.isLowBandwidthEnabled = true
+        params.inputAudioDevice = core.defaultInputAudioDevice
+        currentCall.acceptWithParams(params)
+        //currentCall.accept()
         return null
     }
 
