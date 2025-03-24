@@ -45,8 +45,8 @@ android {
         minSdk = 23
         targetSdk = 33
 
-        versionCode = 2000140
-        versionName = "2.0.1"
+        versionCode = 2000340
+        versionName = "2.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "SENDGRID_MAIL_TO", "\"${getDestinationEmailAddress()}\"")

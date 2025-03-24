@@ -1,4 +1,7 @@
 # CHANGELOG
+### 2.0.3
+- FEAT:upgrade linbridge
+
 ### 2.0.1
 - FIX: linbridge crash
 - FIX: receiver says busy after ringing for 1-2 seconds
