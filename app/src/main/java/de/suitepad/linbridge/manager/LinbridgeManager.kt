@@ -131,7 +131,7 @@ class LinbridgeManager @Inject constructor(
             return
         }
         proxyAddress.transport = TransportType.Udp
-
+        proxyAddress.port = -1
         proxyConfig.isRegisterEnabled = true
         proxyConfig.serverAddr = proxyAddress.asStringUriOnly()
         proxyConfig.identityAddress = address
