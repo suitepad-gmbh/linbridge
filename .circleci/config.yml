@@ -132,10 +132,19 @@ jobs:
     working_directory: ~/
     docker:
       - image: circleci/python:3.4-jessie
+    resource_class: medium
+    environment:
+      URL: https://api.suitepad.systems/v3/app_versions
+      MAIN_CLASS: de.suitepad.linbridge.MainActivity
+      ARTIFACTS_PATH: /tmp/artifacts/release
+      APK: /tmp/artifacts/release/app-release.apk
+      METADATA: /tmp/artifacts/release/output-metadata.json
+      APP_NAME: Linbridge
 
     steps:
       - attach_workspace:
           at: /tmp/artifacts
+
 
       - run:
           name: Loading tools
@@ -163,9 +172,20 @@ jobs:
       - run:
           name: Deploy to backend
           command: |
-            . release_tools/venv/bin/activate
-            python release_tools/deploy.py --manifest /tmp/artifacts/release/output.json \
-              --app-id $APPLICATION_ID --token $BACKEND_TOKEN --user-id $BACKEND_USER_ID
+            version_code=$(cat $METADATA | jq -r '.elements[0].versionCode')
+            version_name=$(cat $METADATA | jq -r '.elements[0].versionName')
+            apk_file=$ARTIFACTS_PATH/$APP_NAME-$version_name.apk
+            mv $APK $apk_file
+            curl -X POST $URL \
+                -H "authorization: Token $BACKEND_TOKEN;client_id=$BACKEND_USER_ID" \
+                -H "cache-control: no-cache" \
+                -H "content-type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW" \
+                -F "app_version[file]=@$apk_file" \
+                -F "app_version[app_id]=$APPLICATION_ID" \
+                -F "app_version[main_class]=$MAIN_CLASS" \
+                -F "app_version[version_code]=$version_code" \
+                -F "app_version[version_name]=$version_name" \
+                -F "app_version[testing_version]=true"
   notify:
     working_directory: ~/linbridge
     docker:
