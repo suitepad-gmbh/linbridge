@@ -1,4 +1,7 @@
 # CHANGELOG
+### 2.0.4
+- FIX: switch back to linphone.no-video
+
 ### 2.0.3
 - FEAT:upgrade linbridge
 
