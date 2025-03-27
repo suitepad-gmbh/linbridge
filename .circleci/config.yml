@@ -145,30 +145,6 @@ jobs:
       - attach_workspace:
           at: /tmp/artifacts
 
-
-      - run:
-          name: Loading tools
-          command: |
-            mkdir .ssh
-            echo -e "Host github.com\n\tStrictHostKeyChecking no\n" > .ssh/config
-            git clone git@github.com:suitepad-gmbh/apk_keystore.git release_tools
-
-      - restore_cache:
-          key: deps1-{{ .Branch }}-{{ checksum "release_tools/requirements.txt" }}
-
-      - run:
-          name: Download Dependencies
-          command: |
-            cd release_tools
-            python3 -m venv venv
-            . venv/bin/activate
-            pip install -r requirements.txt
-
-      - save_cache:
-          key: deps1-{{ .Branch }}-{{ checksum "release_tools/requirements.txt" }}
-          paths:
-            - release_tools/venv
-
       - run:
           name: Deploy to backend
           command: |
