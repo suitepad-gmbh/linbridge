@@ -9,6 +9,8 @@ import dagger.hilt.android.scopes.ServiceScoped
 import de.suitepad.linbridge.api.AudioConfiguration
 import de.suitepad.linbridge.api.core.*
 import de.suitepad.linbridge.BuildConfig
+import de.suitepad.linbridge.helper.AudioOptimizer
+import de.suitepad.linbridge.helper.AudioOptimizer.getConfiguration
 import org.linphone.core.*
 import timber.log.Timber
 import java.util.*
@@ -22,15 +24,13 @@ class LinbridgeManager @Inject constructor(
 ) : OptionalCoreListener, IManager {
 
     var registrationState: RegistrationState? = null
-
     private var callEndReason: CallEndReason = CallEndReason.None
-
     val keepAliveTask = object : TimerTask() {
         override fun run() {
             val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
             audioManager.isMicrophoneMute = false
-            audioManager.isSpeakerphoneOn = false
+           // audioManager.isSpeakerphoneOn = false
             core.iterate()
         }
     }
@@ -58,8 +58,10 @@ class LinbridgeManager @Inject constructor(
         core.isVideoPreviewEnabled = false
 
         core.setUserAgent(BuildConfig.APPLICATION_ID, BuildConfig.VERSION_NAME)
-        core.maybeConfigureDevice()
+        //core.maybeConfigureDevice()
 
+        AudioOptimizer.tuneAudioStack(core, context)
+        AudioOptimizer.optimizeForLoudAndCleanAudio(core)
         Timber.i(core.config.dumpAsXml())
     }
 
@@ -402,23 +404,22 @@ fun Core.getEnabledCodecs(): Array<AudioCodec>? {
     }.toTypedArray()
 }
 
-fun Core.getConfiguration(): AudioConfiguration {
-    return AudioConfiguration().also {
-        it.microphoneGain = micGainDb.toInt()
-        it.speakerGain = playbackGainDb.toInt()
-        it.echoCancellation = isEchoCancellationEnabled
-        it.echoLimiter = isEchoLimiterEnabled
-        it.echoLimiterSustain = config.getInt("sound", "el_sustain", 0)
-        it.echoLimiterSpeakerThreshold = config.getFloat("sound", "el_thres", 0f)
-        it.echoLimiterMicrophoneDecrease = config.getInt("sound", "el_force", 0)
-        it.echoLimiterDoubleTalkDetection = config.getFloat("sound", "el_transmit_threshold", 0f)
-        it.enabledCodecs = getEnabledCodecs()
-    }
-}
+//fun Core.getConfiguration(): AudioConfiguration {
+//    return AudioConfiguration().also {
+//        it.microphoneGain = micGainDb.toInt()
+//        it.speakerGain = playbackGainDb.toInt()
+//        it.echoCancellation = isEchoCancellationEnabled
+//        it.echoLimiter = isEchoLimiterEnabled
+//        it.echoLimiterSustain = config.getInt("sound", "el_sustain", 0)
+//        it.echoLimiterSpeakerThreshold = config.getFloat("sound", "el_thres", 0f)
+//        it.echoLimiterMicrophoneDecrease = config.getInt("sound", "el_force", 0)
+//        it.echoLimiterDoubleTalkDetection = config.getFloat("sound", "el_transmit_threshold", 0f)
+//        it.enabledCodecs = getEnabledCodecs()
+//    }
+//}
 
 fun Core.maybeConfigureDevice() {
-    when (Build.VERSION.SDK_INT) {
-        Build.VERSION_CODES.Q -> {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             isEchoLimiterEnabled = false
             isEchoCancellationEnabled = true
 
@@ -434,6 +435,5 @@ fun Core.maybeConfigureDevice() {
                 "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
                 org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
             )
-        }
     }
 }
