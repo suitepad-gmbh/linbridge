@@ -1,4 +1,7 @@
 # CHANGELOG
+### 2.0.5
+- FEAT: Enable SRV protocol
+
 ### 2.0.4
 - FIX: switch back to linphone.no-video
 
