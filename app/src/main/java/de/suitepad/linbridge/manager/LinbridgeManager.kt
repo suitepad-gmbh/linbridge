@@ -142,6 +142,7 @@ class LinbridgeManager @Inject constructor(
         core.addProxyConfig(proxyConfig)
         core.defaultProxyConfig = proxyConfig
         core.avpfMode = AVPFMode.Disabled
+        core.isDnsSrvEnabled = true
         core.refreshRegisters()
     }
 
