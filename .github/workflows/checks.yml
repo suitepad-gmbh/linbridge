@@ -1,0 +1,124 @@
+env:
+  RUNS_ON_S3_BUCKET_CACHE: github-runner-cache-20240808144417347400000001
+  AWS_REGION: eu-central-1
+  CC_TEST_REPORTER_ID: 38a6e009e7c254afff0d3e69389682fbe24934193c8dbd6a71b7f2b4a153775b
+  COMPOSE_BAKE: true
+
+name: Checks
+
+on:
+  push:
+  schedule:
+    - cron: "0 0 * * 1-5"
+
+jobs:
+  lint:
+    name: Run lint
+    runs-on: [self-hosted, ubuntu-24.04, 4-cores]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache dependencies and build
+        uses: runs-on/cache@v4
+        with:
+          path: |
+            **/.gradle
+            .gradle-cache
+            **/build
+          key: ${{ runner.os }}-gradle-lint-${{ hashFiles('**/build.gradle.kts') }}
+          restore-keys: ${{ runner.os }}-gradle-lint
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Docker build
+        run: |
+          docker compose build
+      - name: Lint
+        run: |
+          docker compose run app ./gradlew androidDependencies
+          docker compose run app ./gradlew lintRelease
+        env:
+          REPO_SUITEPAD_USERNAME: ${{ secrets.REPO_SUITEPAD_USERNAME }}
+          REPO_SUITEPAD_PASSWORD: ${{ secrets.REPO_SUITEPAD_PASSWORD }}
+      - name: Archive lint results
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-results
+          path: |
+            **/build/reports/lint-results-release.html
+            **/build/reports/lint-results-release.xml
+
+  test:
+    name: Run tests
+    runs-on: [self-hosted, ubuntu-24.04, 4-cores]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache dependencies and build
+        uses: runs-on/cache@v4
+        with:
+          path: |
+            **/.gradle
+            .gradle-cache
+            **/build
+          key: ${{ runner.os }}-gradle-test-${{ hashFiles('**/build.gradle.kts') }}
+          restore-keys: ${{ runner.os }}-gradle-test
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Docker build
+        run: |
+          docker compose build
+      - name: Test
+        run: |
+          cc-test-reporter before-build
+          docker compose run app ./gradlew androidDependencies
+          docker compose run app ./gradlew --no-daemon --max-workers=2 koverReport koverMergedReport
+        env:
+          GITHUB_PACKAGE_USERNAME: ${{ secrets.GH_PACKAGE_USERNAME }}
+          GITHUB_PACKAGE_PASSWORD: ${{ secrets.GH_PACKAGE_PASSWORD }}
+          REPO_SUITEPAD_USERNAME: ${{ secrets.REPO_SUITEPAD_USERNAME }}
+          REPO_SUITEPAD_PASSWORD: ${{ secrets.REPO_SUITEPAD_PASSWORD }}
+      - name: Upload code coverage results
+        run: |
+          for module in app datasource core \
+            cortana cortana/etio cortana/floatingbutton cortana/irblaster \
+            cache cache/legacy cache/morpheus
+          do
+            output_file=$(echo $module | tr '/' '_')
+            JACOCO_SOURCE_PATH=$PWD/$module/src/main/java \
+              cc-test-reporter format-coverage -t jacoco \
+              -o coverage/$output_file.json $module/build/reports/coverage/result.xml
+          done
+          cc-test-reporter sum-coverage coverage/*.json -o coverage/total.json
+          cc-test-reporter upload-coverage -i coverage/total.json
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report
+          path: ./build/reports/coverage
+
+  build:
+    name: Build
+    runs-on: [self-hosted, ubuntu-24.04, 4-cores]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache dependencies and build
+        uses: runs-on/cache@v4
+        with:
+          path: |
+            **/.gradle
+            .gradle-cache
+            **/build
+          key: ${{ runner.os }}-gradle-build-${{ hashFiles('**/build.gradle.kts') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-build
+            ${{ runner.os }}-gradle
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Docker build
+        run: |
+          docker compose build
+      - name: Test
+        run: |
+          docker compose run app ./gradlew androidDependencies
+          docker compose run app ./gradlew compileReleaseSources
+        env:
+          REPO_SUITEPAD_USERNAME: ${{ secrets.REPO_SUITEPAD_USERNAME }}
+          REPO_SUITEPAD_PASSWORD: ${{ secrets.REPO_SUITEPAD_PASSWORD }}

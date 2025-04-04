@@ -1,0 +1,17 @@
+services:
+  and:
+    build:
+      context: .
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      HISTFILE: .history
+      _JAVA_OPTIONS: -Xmx2g
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2 -Dkotlin.incremental=false -Dkotlin.compiler.execution.strategy=in-process"
+      LINT_PRINT_STACKTRACE: true
+      GRADLE_USER_HOME: /app/.gradle-cache
+      # GRADLE_LOCAL_JAVA_HOME: localtion/to/jdk/corretto
+
+      REPO_SUITEPAD_USERNAME: ${REPO_SUITEPAD_USERNAME}
+      REPO_SUITEPAD_PASSWORD: ${REPO_SUITEPAD_PASSWORD}
