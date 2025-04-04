@@ -66,6 +66,7 @@ class LinbridgeManager @Inject constructor(
     override fun start() {
         core.isMicEnabled = true
         core.start()
+        core.isDnsSrvEnabled = true
         iterate()
     }
 
@@ -131,7 +132,6 @@ class LinbridgeManager @Inject constructor(
             return
         }
         proxyAddress.transport = TransportType.Udp
-
         proxyConfig.isRegisterEnabled = true
         proxyConfig.serverAddr = proxyAddress.asStringUriOnly()
         proxyConfig.identityAddress = address
@@ -142,6 +142,7 @@ class LinbridgeManager @Inject constructor(
         core.addProxyConfig(proxyConfig)
         core.defaultProxyConfig = proxyConfig
         core.avpfMode = AVPFMode.Disabled
+        core.isDnsSrvEnabled = true
         core.refreshRegisters()
     }
 

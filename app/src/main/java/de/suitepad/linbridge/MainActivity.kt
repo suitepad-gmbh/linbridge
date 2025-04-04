@@ -14,6 +14,8 @@ import de.suitepad.linbridge.databinding.DialogSendlogsBinding
 import de.suitepad.linbridge.helper.LogsExportHelper
 import de.suitepad.linbridge.logger.LogCatcher
 import kotlinx.coroutines.*
+import org.linphone.core.Factory
+import org.linphone.core.LogCollectionState
 
 class MainActivity : AppCompatActivity(), LogCatcher.LogListener {
 
@@ -29,6 +31,11 @@ class MainActivity : AppCompatActivity(), LogCatcher.LogListener {
         ActivityCompat.requestPermissions(this, arrayOf(
             Manifest.permission.RECORD_AUDIO,
         ), 123)
+
+        if (BuildConfig.DEBUG) {
+            Factory.instance().enableLogCollection(LogCollectionState.Enabled)
+            Factory.instance().setLogCollectionPath(filesDir.absolutePath)
+        }
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
