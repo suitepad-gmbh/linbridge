@@ -145,7 +145,6 @@ jobs:
       - attach_workspace:
           at: /tmp/artifacts
 
-
       - run:
           name: Loading tools
           command: |
@@ -153,31 +152,22 @@ jobs:
             echo -e "Host github.com\n\tStrictHostKeyChecking no\n" > .ssh/config
             git clone git@github.com:suitepad-gmbh/apk_keystore.git release_tools
 
-      - restore_cache:
-          key: deps1-{{ .Branch }}-{{ checksum "release_tools/requirements.txt" }}
-
-      - run:
-          name: Download Dependencies
-          command: |
-            cd release_tools
-            python3 -m venv venv
-            . venv/bin/activate
-            pip install -r requirements.txt
-
-      - save_cache:
-          key: deps1-{{ .Branch }}-{{ checksum "release_tools/requirements.txt" }}
-          paths:
-            - release_tools/venv
-
       - run:
           name: Deploy to backend
           command: |
+
+            cat $METADATA
             version_code=$(cat $METADATA | jq -r '.elements[0].versionCode')
             version_name=$(cat $METADATA | jq -r '.elements[0].versionName')
+            echo $version_code
+            echo $version_name
             apk_file=$ARTIFACTS_PATH/$APP_NAME-$version_name.apk
+            cd /tmp/artifacts
+            ls -R | grep ":$" | sed -e 's/:$//' -e 's/[^-][^\/]*\//──/g' -e 's/─/├/' -e '$s/├/└/'
+            cd -
             mv $APK $apk_file
-            curl -X POST $URL \
-                -H "authorization: Token $BACKEND_TOKEN;client_id=$BACKEND_USER_ID" \
+            curl -X POST https://api.suitepad.systems/v3/app_versions \
+                -H "authorization: Token $KRAKEN_TOKEN;client_id=$KRAKEN_CLIENT_ID" \
                 -H "cache-control: no-cache" \
                 -H "content-type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW" \
                 -F "app_version[file]=@$apk_file" \
@@ -241,28 +231,32 @@ workflows:
           requires:
             - build
           filters:
-            branches:
-              ignore: /.*/
             tags:
-              only: /^[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}.*/
-      - hold:
-          type: approval
-          requires:
-            - release
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}.*/
+              only: /.*/
+            # branches:
+            #   ignore: /.*/
+            # tags:
+            #   only: /^[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}.*/
+      # - hold:
+      #     type: approval
+      #     requires:
+      #       - release
+      #     filters:
+      #       branches:
+      #         ignore: /.*/
+      #       tags:
+      #         only: /^[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}.*/
       - deploy:
           context: apk_deployment
           requires:
-            - hold
+            - release
           filters:
-            branches:
-              ignore: /.*/
             tags:
-              only: /^[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}.*/
+              only: /.*/
+            # branches:
+            #   ignore: /.*/
+            # tags:
+            #   only: /^[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}.*/
       - notify:
           name: notify_slack
           context: slack_notifier
