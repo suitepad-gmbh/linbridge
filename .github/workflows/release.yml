@@ -1,0 +1,102 @@
+env:
+  RUNS_ON_S3_BUCKET_CACHE: github-runner-cache-20240808144417347400000001
+  AWS_REGION: eu-central-1
+  COMPOSE_BAKE: true
+
+name: Release
+
+on:
+  push:
+    tags:
+      - '*.*.*'
+
+jobs:
+  release:
+    name: Release app
+    runs-on: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: suitepad-gmbh/apk_keystore
+          token: ${{ secrets.PAT_GITHUB }}
+          path: apk_keystore
+      - name: Cache dependencies and build
+        uses: actions/cache@v4
+        with:
+          path: |
+            **/.gradle
+            .gradle-cache
+            **/build
+          key: ${{ runner.os }}-gradle-release-${{ hashFiles('**/build.gradle.kts') }}
+          restore-keys: ${{ runner.os }}-gradle-release
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Docker build
+        run: |
+          docker compose build
+      - name: Setup parameters
+        run: |
+          echo sendgrid.mailto=$SENDGRID_MAILTO >> local.properties
+          echo sendgrid.apikey=$SENDGRID_APIKEY >> local.properties
+        env:
+          SENDGRID_MAILTO: engineering+linbridge@suitepad.de
+          SENDGRID_APIKEY: ${{ secrets.SENDGRID_APIKEY }}
+      - name: Setup firebase dependencies
+        run: |
+          echo $GOOGLE_SERVICES | base64 -d > app/google-services.json
+        env:
+          GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES }}
+      - name: Assemble Release
+        run: |
+          docker compose run app ./gradlew androidDependencies
+          echo "----------------------------------------------"
+          echo "----------------------------------------------"
+          docker compose run app ./gradlew assembleRelease
+        env:
+          GITHUB_PACKAGE_USERNAME: ${{ secrets.GH_PACKAGE_USERNAME }}
+          GITHUB_PACKAGE_PASSWORD: ${{ secrets.GH_PACKAGE_PASSWORD }}
+          REPO_SUITEPAD_USERNAME: ${{ secrets.REPO_SUITEPAD_USERNAME }}
+          REPO_SUITEPAD_PASSWORD: ${{ secrets.REPO_SUITEPAD_PASSWORD }}
+
+          SIGN_RELEASE_KEYSTOREPASS: ${{ secrets.SIGN_RELEASE_KEYSTOREPASS }}
+          SIGN_RELEASE_KEYALIAS: ${{ secrets.SIGN_RELEASE_KEYALIAS}}
+          SIGN_RELEASE_KEYPASS: ${{ secrets.SIGN_RELEASE_KEYPASS}}
+      - name: metadata
+        id: metadata
+        run: |
+          echo "version_code=$(cat $metadata_file | jq -r '.elements[0].versionCode')" >> $GITHUB_OUTPUT
+          echo "version_name=$(cat $metadata_file | jq -r '.elements[0].versionName')" >> $GITHUB_OUTPUT
+          echo "apk_file=$(cat $metadata_file | jq -r '.elements[0].outputFile')" >> $GITHUB_OUTPUT
+        env:
+          metadata_file: app/build/outputs/apk/release/output-metadata.json
+      - name: Rename APK
+        run: |
+          cp app/build/outputs/apk/release/${{ steps.metadata.outputs.apk_file }} app/build/outputs/apk/release/Linbridge-${{ steps.metadata.outputs.version_name }}.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Linbridge
+          path: app/build/outputs/apk/release/Linbridge-${{ steps.metadata.outputs.version_name }}.apk
+      - name: Upload APK to Kraken
+        run: |
+          apk_file=app/build/outputs/apk/release/Linbridge-$VERSION_NAME.apk
+          echo "Uploading APK from $apk_file to Kraken"
+          curl -X POST https://api.suitepad.systems/v3/app_versions \
+              -H "authorization: Token $KRAKEN_TOKEN;client_id=$KRAKEN_CLIENT_ID" \
+              -H "cache-control: no-cache" \
+              -H "content-type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW" \
+              -F "app_version[file]=@$apk_file" \
+              -F "app_version[app_id]=$LINBRIDGE_APP_ID" \
+              -F "app_version[main_class]=$MAIN_CLASS" \
+              -F "app_version[version_code]=$VERSION_CODE" \
+              -F "app_version[version_name]=$VERSION_NAME" \
+              -F "app_version[testing_version]=true"
+        env:
+          KRAKEN_APP_UPLOAD_URL: https://api.staging.suitepad.engineering/v3/app_versions
+          MAIN_CLASS: de.suitepad.linbridge.MainActivity
+          VERSION_NAME: ${{ steps.metadata.outputs.version_name }}
+          VERSION_CODE: ${{ steps.metadata.outputs.version_code }}
+
+          KRAKEN_TOKEN: ${{ secrets.KRAKEN_TOKEN }}
+          KRAKEN_CLIENT_ID: ${{ secrets.KRAKEN_CLIENT_ID }}
+          LINBRIDGE_APP_ID: 357

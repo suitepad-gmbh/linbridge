@@ -16,11 +16,15 @@ platforms/android/.idea
 build
 *.apk
 
-.gradle
-.DS_Store
 /build
 /app/build
 /captures
 projectFilesBackup/
 .project
 /.settings
+
+.gradle/*
+.gradle-cache/*
+buildSrc/.gradle/
+
+.history
