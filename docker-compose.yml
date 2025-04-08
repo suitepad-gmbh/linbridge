@@ -1,0 +1,21 @@
+services:
+  app:
+    image: cimg/android:2023.08
+    working_dir: /app
+    volumes:
+      - .:/app
+      # - ../apk_keystore:/app/apk_keystore
+    environment:
+      HISTFILE: .history
+      _JAVA_OPTIONS: -Xmx2g
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2 -Dkotlin.incremental=false -Dkotlin.compiler.execution.strategy=in-process"
+      LINT_PRINT_STACKTRACE: true
+      GRADLE_USER_HOME: /app/.gradle-cache
+
+      REPO_SUITEPAD_USERNAME: ${REPO_SUITEPAD_USERNAME}
+      REPO_SUITEPAD_PASSWORD: ${REPO_SUITEPAD_PASSWORD}
+
+      SIGN_RELEASE_KEYSTORE: /app/apk_keystore/app.jks
+      SIGN_RELEASE_KEYSTOREPASS: ${SIGN_RELEASE_KEYSTOREPASS}
+      SIGN_RELEASE_KEYALIAS: ${SIGN_RELEASE_KEYALIAS}
+      SIGN_RELEASE_KEYPASS: ${SIGN_RELEASE_KEYPASS}
