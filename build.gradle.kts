@@ -32,4 +32,3 @@ allprojects {
         maven { setUrl("https://suitepad.mycloudrepo.io/public/repositories/public") }
     }
 }
-
