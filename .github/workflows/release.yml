@@ -13,7 +13,7 @@ on:
 jobs:
   release:
     name: Release app
-    runs-on: [ubuntu-latest]
+    runs-on: [self-hosted, ubuntu-24.04, 4-cores]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
@@ -22,7 +22,7 @@ jobs:
           token: ${{ secrets.PAT_GITHUB }}
           path: apk_keystore
       - name: Cache dependencies and build
-        uses: actions/cache@v4
+        uses: runs-on/cache@v4
         with:
           path: |
             **/.gradle
