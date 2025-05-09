@@ -47,11 +47,12 @@ class BridgeEventDispatcher @Inject constructor() : OptionalCoreListener, IBridg
        Timber.i("onSubscribeReceived: $subscribeEvent")
     }
 
+
     override fun onRegistrationStateChanged(core: Core, proxyConfig: ProxyConfig, cstate: RegistrationState?, message: String) {
-        Timber.i("registration state changed [$cstate] $message")
-        Timber.i("onRegistrationStateChanged: $listener")
-        if (cstate != null) {
-            listener?.authenticationStateChanged(AuthenticationState.valueOf(cstate.name))
+       Timber.i("registration state changed [$cstate] $message")
+       Timber.i("onRegistrationStateChanged: $listener")
+        if (cstate == RegistrationState.Ok) {
+           listener?.authenticationStateChanged(AuthenticationState.valueOf(cstate.name))
         }
     }
 

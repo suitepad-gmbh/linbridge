@@ -90,10 +90,10 @@ repositories {
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.0.21")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
     implementation("de.suitepad:linbridge-api:1.1.4")
-    implementation("org.linphone.no-video:linphone-sdk-android:5.4.1-pre.11+94bf69bf")
+    implementation("dnsjava:dnsjava:3.6.3")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("com.jakewharton.timber:timber:5.0.1")
@@ -114,6 +114,7 @@ dependencies {
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:27.1.0"))
     implementation("com.google.firebase:firebase-crashlytics-ktx:17.1.0")
+    implementation("org.linphone:linphone-sdk-android:5.5+")
 }
 
 apply(plugin = "com.google.gms.google-services")

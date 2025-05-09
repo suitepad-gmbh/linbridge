@@ -67,7 +67,7 @@ class LinbridgeEventLogger @Inject constructor(
     }
 
     override fun onAccountRegistrationStateChanged(core: Core, account: Account, state: RegistrationState?, message: String) {
-        log("onAccountRegistrationStateChanged: ")
+        log("onAccountRegistrationStateChanged: ${account.state}")
     }
 
     override fun onDefaultAccountChanged(core: Core, account: Account?) {
