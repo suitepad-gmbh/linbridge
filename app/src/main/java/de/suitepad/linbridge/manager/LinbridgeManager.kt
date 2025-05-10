@@ -57,6 +57,8 @@ class LinbridgeManager @Inject constructor(
 
     private var currentSrvIndex = 0
 
+    private var isSrvRecordAvailable = false
+
     val keepAliveTask = object : TimerTask() {
         override fun run() {
             val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -124,130 +126,94 @@ class LinbridgeManager @Inject constructor(
     }
 
 
-    override suspend fun authenticate(host: String, port: Int, authId: String?, username: String, password: String, proxy: String?) {
-
+    override suspend fun authenticate(
+        host: String,
+        port: Int,
+        authId: String?,
+        username: String,
+        password: String,
+        proxy: String?
+    ) {
         if (possibleSrvRecords.isEmpty()) {
             possibleSrvRecords = DnsSrvLookupManager.lookupSrvRecordsSuspend("_sip._udp.$proxy").toMutableList()
+            isSrvRecordAvailable = possibleSrvRecords.isNotEmpty()
         }
 
 
-        possibleSrvRecords.forEach {
-            println("*** ${it.target}  ${it.weight}  ${it.priority} ${it.port}")
-        }
-
-        if (possibleSrvRecords.isNotEmpty()) {
+        val (effectiveProxy, shouldClearCredentials) = if (isSrvRecordAvailable) {
             val srvProxy = possibleSrvRecords[currentSrvIndex].target.toString().trimEnd('.')
-            println("******  $currentSrvIndex  $srvProxy")
-            val srvPort = possibleSrvRecords[currentSrvIndex].port.toInt()
-
-            val proxyAddrStr = "sip:$host@$port"
-            val identity = Factory.instance().createAddress("sip:$username@$host")
-            if (identity == null) {
-                Timber.e("Failed to create identity address from sip:$username@$host")
-                return
-            }
-            val authInfo = Factory.instance().createAuthInfo(
-                username, authId, password, null, null, identity.domain
-            )
-            core.addAuthInfo(authInfo)
-
-            val sipProxy = buildString {
-                append("sip:")
-                if (proxy.isNullOrBlank()) {
-                    append("$username@$host")
-                } else {
-                    if (!srvProxy.startsWith("sip:") && !srvProxy.startsWith("<sip:") && !srvProxy.startsWith("sips:") && !srvProxy.startsWith(
-                            "<sips:"
-                        )
-                    ) {
-                        append(srvProxy)
-                    } else {
-                        append(srvProxy.removePrefix("<").removePrefix(">"))
-                    }
-                }
-            }
-            val serverAddress = Factory.instance().createAddress(sipProxy)
-            if (serverAddress == null) {
-                Timber.e("Failed to create proxy address from sip:${srvProxy ?: host}")
-                return
-            }
-            serverAddress.port = port
-            serverAddress.transport = TransportType.Udp
-
-            val accountParams = core.createAccountParams().apply {
-                this.identityAddress = identity
-                this.serverAddress = serverAddress
-                isRegisterEnabled = true
-                avpfMode = AVPFMode.Disabled
-                isQualityReportingEnabled = false
-            }
-
-            val account = core.createAccount(accountParams)
-            core.addAccount(account)
-            core.defaultAccount = account
-           /////  core.isDnsSrvEnabled = true
-            core.refreshRegisters()
-
-            Timber.i("Authentication setup complete for $identity")
-
             currentSrvIndex++
+            srvProxy to false
         } else {
+            (proxy ?: "$username@$host") to true
+        }
+
+        if (shouldClearCredentials) {
             clearCredentials()
-            val identity = Factory.instance().createAddress("sip:$username@$host")
-            if (identity == null) {
-                Timber.e("Failed to create identity address from sip:$username@$host")
-                return
-            }
+        }
 
+        val identity = Factory.instance().createAddress("sip:$username@$host")
+        if (identity == null) {
+            Timber.e("Failed to create identity address from sip:$username@$host")
+            return
+        }
 
-            val authInfo = Factory.instance().createAuthInfo(
-                username, authId, password, null, null, identity.domain
-            )
-            core.addAuthInfo(authInfo)
-            val sipProxy = buildString {
-                append("sip:")
-                if (proxy.isNullOrBlank()) {
-                    append("$username@$host")
+        val authInfo = Factory.instance().createAuthInfo(
+            username, authId, password, null, null, identity.domain
+        )
+        core.addAuthInfo(authInfo)
+
+        val sipProxy = buildSipProxy(effectiveProxy, proxy, username, host)
+        val serverAddress = Factory.instance().createAddress(sipProxy)
+        if (serverAddress == null) {
+            Timber.e("Failed to create proxy address from sip:${effectiveProxy ?: host}")
+            return
+        }
+
+        serverAddress.port = port
+        serverAddress.transport = TransportType.Udp
+
+        val accountParams = core.createAccountParams().apply {
+            this.identityAddress = identity
+            this.serverAddress = serverAddress
+            isRegisterEnabled = true
+            avpfMode = AVPFMode.Disabled
+            isQualityReportingEnabled = false
+        }
+
+        val account = core.createAccount(accountParams)
+        core.addAccount(account)
+        core.defaultAccount = account
+        core.refreshRegisters()
+
+        Timber.i("Authentication setup complete for $identity")
+    }
+
+    private fun buildSipProxy(
+        resolvedProxy: String?,
+        originalProxy: String?,
+        username: String,
+        host: String
+    ): String {
+        return buildString {
+            append("sip:")
+            if (originalProxy.isNullOrBlank()) {
+                append("$username@$host")
+            } else {
+                if (!resolvedProxy.isNullOrBlank() &&
+                    !resolvedProxy.startsWith("sip:") &&
+                    !resolvedProxy.startsWith("<sip:") &&
+                    !resolvedProxy.startsWith("sips:") &&
+                    !resolvedProxy.startsWith("<sips:")
+                ) {
+                    append(resolvedProxy)
                 } else {
-                    if (!proxy.startsWith("sip:") && !proxy.startsWith("<sip:") && !proxy.startsWith("sips:") && !proxy.startsWith(
-                            "<sips:"
-                        )
-                    ) {
-                        append(proxy)
-                    } else {
-                        append(proxy.removePrefix("<").removePrefix(">"))
-                    }
+                    append(resolvedProxy?.removePrefix("<")?.removePrefix(">"))
                 }
             }
-
-
-            val serverAddress = Factory.instance().createAddress(sipProxy)
-            if (serverAddress == null) {
-                Timber.e("Failed to create proxy address from sip:${proxy ?: host}")
-                return
-            }
-            serverAddress.port = port
-            serverAddress.transport = TransportType.Udp
-
-
-            val accountParams = core.createAccountParams().apply {
-                this.identityAddress = identity
-                this.serverAddress = serverAddress
-                isRegisterEnabled = true
-                avpfMode = AVPFMode.Disabled
-                isQualityReportingEnabled = false
-            }
-
-            val account = core.createAccount(accountParams)
-            core.addAccount(account)
-            core.defaultAccount = account
-           /* core.isDnsSrvEnabled = true */
-            core.refreshRegisters()
-
-            Timber.i("Authentication setup complete for $identity")
-
         }
     }
+
     override fun clearCredentials() {
         core.defaultAccount?.let {
             it.params.isRegisterEnabled = false
@@ -362,9 +328,6 @@ class LinbridgeManager @Inject constructor(
     }
 
     override fun onAccountRegistrationStateChanged(core: Core, account: Account, state: RegistrationState?, message: String) {
-
-        Timber.i("$$$$$$ $state")
-        Timber.i("$$$$$$ $message")
         if (state == RegistrationState.Failed) {
             registrationState = RegistrationState.Refreshing
             tryNextPossibleSRVRecord()
