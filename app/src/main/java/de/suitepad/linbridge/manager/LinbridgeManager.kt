@@ -339,7 +339,7 @@ class LinbridgeManager @Inject constructor(
     }
 
     private fun tryNextPossibleSRVRecord() {
-        if (possibleSrvRecords.isNotEmpty() && currentSrvIndex <= possibleSrvRecords.size -1) {
+        if (currentSrvIndex <= possibleSrvRecords.size -1) {
             LinphoneScope.launch {
                 authenticate(
                     host = core.defaultAccount?.params?.domain.toString(),
