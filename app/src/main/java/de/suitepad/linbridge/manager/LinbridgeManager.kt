@@ -280,6 +280,7 @@ class LinbridgeManager @Inject constructor(
             RegistrationState.Ok -> AuthenticationState.Ok
             RegistrationState.Cleared -> AuthenticationState.Cleared
             RegistrationState.Failed -> AuthenticationState.Failed
+            RegistrationState.Refreshing -> AuthenticationState.Progress
             else -> null
         }
     }
@@ -328,7 +329,7 @@ class LinbridgeManager @Inject constructor(
     }
 
     override fun onAccountRegistrationStateChanged(core: Core, account: Account, state: RegistrationState?, message: String) {
-        if (state == RegistrationState.Failed) {
+        if (state == RegistrationState.Failed && isSrvRecordAvailable) {
             registrationState = RegistrationState.Refreshing
             tryNextPossibleSRVRecord()
         } else {
@@ -351,6 +352,7 @@ class LinbridgeManager @Inject constructor(
             }
         } else {
             Timber.i("No more SRV records to try")
+            registrationState = RegistrationState.Failed
         }
     }
     @Deprecated("Deprecated in Java", ReplaceWith("TODO(\"Not yet implemented\")"))
