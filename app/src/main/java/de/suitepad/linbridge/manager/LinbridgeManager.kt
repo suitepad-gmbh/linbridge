@@ -177,7 +177,10 @@ class LinbridgeManager @Inject constructor(
             this.identityAddress = identity
             this.serverAddress = serverAddress
             isRegisterEnabled = true
+            expires = 600
             avpfMode = AVPFMode.Disabled
+            isPublishEnabled = false
+            isDialEscapePlusEnabled = false
             isQualityReportingEnabled = false
         }
 
