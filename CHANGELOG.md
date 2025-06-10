@@ -1,4 +1,7 @@
 # CHANGELOG
+### 2.0.6
+- FEAT: SRV Failover + remove deprecation
+
 ### 2.0.5
 - FEAT: Enable SRV protocol
 
