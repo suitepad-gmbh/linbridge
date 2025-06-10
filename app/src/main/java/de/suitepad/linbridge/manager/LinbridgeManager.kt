@@ -225,7 +225,7 @@ class LinbridgeManager @Inject constructor(
         core.clearAllAuthInfo()
     }
 
-    override fun call(destination: String): CallError? {
+   /* override fun call(destination: String): CallError? {
         if (!core.isNetworkReachable) {
             return CallError.NetworkUnreachable
         }
@@ -249,6 +249,41 @@ class LinbridgeManager @Inject constructor(
             "sip:$destination@$domain"
         }
 
+        Timber.i("calling $address")
+        core.invite(address)
+        return null
+    } */
+    override fun call(destination: String): CallError? {
+        if (!core.isNetworkReachable) {
+            return CallError.NetworkUnreachable
+        }
+
+        if (!isRegistered()) {
+            return CallError.NotAuthenticated
+        }
+
+        if (core.inCall()) {
+            return CallError.AlreadyInCall
+        }
+
+       /* val address = if (destination.startsWith("<sip") || destination.startsWith("sip")) {
+            destination
+        } else {
+            val address = core.defaultProxyConfig?.serverAddr ?: return CallError.NetworkUnreachable
+            Factory.instance().createAddress(address)?.domain.let { host ->
+                "sip:$destination@$host"
+            }
+            val domain = core.defaultAccount?.params?.serverAddress?.domain ?: return CallError.NetworkUnreachable
+            "sip:$destination@$domain"
+        } */
+
+        val address = if (destination.startsWith("<sip") || destination.startsWith("sip")) {
+            destination
+        } else {
+            val identity = core.defaultProxyConfig?.identityAddress ?: return CallError.NetworkUnreachable
+            val domain = identity.domain ?: return CallError.NetworkUnreachable
+            "sip:$destination@$domain"
+        }
         Timber.i("calling $address")
         core.invite(address)
         return null
