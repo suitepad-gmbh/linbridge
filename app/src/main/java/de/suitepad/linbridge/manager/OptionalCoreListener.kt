@@ -48,8 +48,6 @@ interface OptionalCoreListener : CoreListener {
 
     }
 
-    override fun onRegistrationStateChanged(core: Core, proxyConfig: ProxyConfig, cstate: RegistrationState?, message: String) {
-    }
 
     override fun onNotifyPresenceReceived(core: Core, linphoneFriend: Friend) {
 

@@ -6,13 +6,41 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ServiceScoped
-import de.suitepad.linbridge.api.AudioConfiguration
-import de.suitepad.linbridge.api.core.*
 import de.suitepad.linbridge.BuildConfig
-import org.linphone.core.*
+import de.suitepad.linbridge.api.AudioConfiguration
+import de.suitepad.linbridge.api.core.AudioCodec
+import de.suitepad.linbridge.api.core.AuthenticationState
+import de.suitepad.linbridge.api.core.CallEndReason
+import de.suitepad.linbridge.api.core.CallError
+import de.suitepad.linbridge.api.core.Credentials
+import de.suitepad.linbridge.di.LinphoneScope
+import kotlinx.coroutines.launch
+import org.linphone.core.AVPFMode
+import org.linphone.core.Account
+import org.linphone.core.Address
+import org.linphone.core.Alert
+import org.linphone.core.Call
+import org.linphone.core.ChatMessage
+import org.linphone.core.ChatMessageReaction
+import org.linphone.core.ChatRoom
+import org.linphone.core.ConferenceInfo
+import org.linphone.core.Content
+import org.linphone.core.Core
+import org.linphone.core.Event
+import org.linphone.core.Factory
+import org.linphone.core.Headers
+import org.linphone.core.MediaDirection
+import org.linphone.core.MessageWaitingIndication
+import org.linphone.core.ProxyConfig
+import org.linphone.core.Reason
+import org.linphone.core.RegistrationState
+import org.linphone.core.TransportType
+import org.xbill.DNS.SRVRecord
 import timber.log.Timber
-import java.util.*
+import java.util.Timer
+import java.util.TimerTask
 import javax.inject.Inject
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 @ServiceScoped
@@ -24,6 +52,12 @@ class LinbridgeManager @Inject constructor(
     var registrationState: RegistrationState? = null
 
     private var callEndReason: CallEndReason = CallEndReason.None
+
+    private  var possibleSrvRecords : MutableList<SRVRecord> = mutableListOf()
+
+    private var currentSrvIndex = 0
+
+    private var isSrvRecordAvailable = false
 
     val keepAliveTask = object : TimerTask() {
         override fun run() {
@@ -50,7 +84,7 @@ class LinbridgeManager @Inject constructor(
         core.incTimeout = 40
 
         core.clearAllAuthInfo()
-        core.clearProxyConfig()
+        core.clearAccounts()
         core.disableChat(Reason.NotImplemented)
         core.isVideoDisplayEnabled = false
         core.isVideoCaptureEnabled = false
@@ -61,6 +95,7 @@ class LinbridgeManager @Inject constructor(
         core.maybeConfigureDevice()
 
         Timber.i(core.config.dumpAsXml())
+
     }
 
     override fun start() {
@@ -83,7 +118,6 @@ class LinbridgeManager @Inject constructor(
 
     override fun configure(settings: AudioConfiguration) {
         core.configure(settings)
-        // todo: this is just a migration step, replace this with always null ringtone in init code
         if (settings.shouldNotRing) {
             core.ring = null
         } else {
@@ -91,69 +125,107 @@ class LinbridgeManager @Inject constructor(
         }
     }
 
-    override fun authenticate(host: String, port: Int, authId: String?, username: String, password: String, proxy: String?) {
-        clearCredentials()
 
-        val sipAddress = "sip:$username@$host:$port"
-        val address: Address? = try {
-            Factory.instance().createAddress(sipAddress)
-        } catch (e: IllegalStateException) {
-            Timber.e(e, "couldn't connect using \"$sipAddress\"")
-            clearCredentials()
-            return
-        }
-        if (address == null) {
-            Timber.w(IllegalArgumentException("Couldn't create address from $sipAddress"))
-            return
+    override suspend fun authenticate(
+        host: String,
+        port: Int,
+        authId: String?,
+        username: String,
+        password: String,
+        proxy: String?
+    ) {
+        if (possibleSrvRecords.isEmpty()) {
+            possibleSrvRecords = DnsSrvLookupManager.lookupSrvRecordsSuspend("_sip._udp.$proxy").toMutableList()
+            isSrvRecordAvailable = possibleSrvRecords.isNotEmpty()
         }
 
-        val authenticationInfo = address.username
-            ?.let { Factory.instance().createAuthInfo(it, authId, password, null, null, address.domain) }
-            ?: return Timber.w(
-                IllegalArgumentException("Couldn't read username from $address")
-            )
 
-        val proxyConfig = core.createProxyConfig()
-        var sipProxy = "sip:"
-        if (proxy.isNullOrBlank()) {
-            sipProxy += host
+        val (effectiveProxy, shouldClearCredentials) = if (isSrvRecordAvailable) {
+            val srvProxy = possibleSrvRecords[currentSrvIndex].target.toString().trimEnd('.')
+            currentSrvIndex++
+            srvProxy to false
         } else {
-            if (!proxy.startsWith("sip:") && !proxy.startsWith("<sip:") &&
-                !proxy.startsWith("sips:") && !proxy.startsWith("<sips:")
-            ) {
-                sipProxy += proxy
+            (proxy ?: "$username@$host") to true
+        }
+
+        if (shouldClearCredentials) {
+            clearCredentials()
+        }
+
+        val identity = Factory.instance().createAddress("sip:$username@$host")
+        if (identity == null) {
+            Timber.e("Failed to create identity address from sip:$username@$host")
+            return
+        }
+
+        val authInfo = Factory.instance().createAuthInfo(
+            username, authId, password, null, null, identity.domain
+        )
+        core.addAuthInfo(authInfo)
+
+        val sipProxy = buildSipProxy(effectiveProxy, proxy, username, host)
+        val serverAddress = Factory.instance().createAddress(sipProxy)
+        if (serverAddress == null) {
+            Timber.e("Failed to create proxy address from sip:${effectiveProxy ?: host}")
+            return
+        }
+
+        serverAddress.port = port
+        serverAddress.transport = TransportType.Udp
+
+        val accountParams = core.createAccountParams().apply {
+            this.identityAddress = identity
+            this.serverAddress = serverAddress
+            isRegisterEnabled = true
+            expires = 600
+            avpfMode = AVPFMode.Disabled
+            isPublishEnabled = false
+            isDialEscapePlusEnabled = false
+            isQualityReportingEnabled = false
+        }
+
+        val account = core.createAccount(accountParams)
+        core.addAccount(account)
+        core.defaultAccount = account
+        core.refreshRegisters()
+
+        Timber.i("Authentication setup complete for $identity")
+    }
+
+    private fun buildSipProxy(
+        resolvedProxy: String?,
+        originalProxy: String?,
+        username: String,
+        host: String
+    ): String {
+        return buildString {
+            append("sip:")
+            if (originalProxy.isNullOrBlank()) {
+                append("$username@$host")
             } else {
-                sipProxy = proxy
+                if (!resolvedProxy.isNullOrBlank() &&
+                    !resolvedProxy.startsWith("sip:") &&
+                    !resolvedProxy.startsWith("<sip:") &&
+                    !resolvedProxy.startsWith("sips:") &&
+                    !resolvedProxy.startsWith("<sips:")
+                ) {
+                    append(resolvedProxy)
+                } else {
+                    append(resolvedProxy?.removePrefix("<")?.removePrefix(">"))
+                }
             }
         }
-        val proxyAddress: Address? = Factory.instance().createAddress(sipProxy)
-        if (proxyAddress == null) {
-            Timber.w(IllegalArgumentException("couldn't create address from $sipProxy"))
-            return
-        }
-        proxyAddress.transport = TransportType.Udp
-        proxyConfig.isRegisterEnabled = true
-        proxyConfig.serverAddr = proxyAddress.asStringUriOnly()
-        proxyConfig.identityAddress = address
-        proxyConfig.isQualityReportingEnabled = false
-        proxyConfig.avpfMode = AVPFMode.Disabled
-
-        core.addAuthInfo(authenticationInfo)
-        core.addProxyConfig(proxyConfig)
-        core.defaultProxyConfig = proxyConfig
-        core.avpfMode = AVPFMode.Disabled
-        core.isDnsSrvEnabled = true
-        core.refreshRegisters()
     }
 
     override fun clearCredentials() {
-        val account = core.defaultProxyConfig ?: return
-        account.isRegisterEnabled = false
-        core.clearProxyConfig()
+        core.defaultAccount?.let {
+            it.params.isRegisterEnabled = false
+        }
+        core.clearAccounts()
         core.clearAllAuthInfo()
     }
 
-    override fun call(destination: String): CallError? {
+   /* override fun call(destination: String): CallError? {
         if (!core.isNetworkReachable) {
             return CallError.NetworkUnreachable
         }
@@ -169,12 +241,49 @@ class LinbridgeManager @Inject constructor(
         val address = if (destination.startsWith("<sip") || destination.startsWith("sip")) {
             destination
         } else {
+//            val address = core.defaultProxyConfig?.serverAddr ?: return CallError.NetworkUnreachable
+//            Factory.instance().createAddress(address)?.domain.let { host ->
+//                "sip:$destination@$host"
+//            }
+            val domain = core.defaultAccount?.params?.serverAddress?.domain ?: return CallError.NetworkUnreachable
+            "sip:$destination@$domain"
+        }
+
+        Timber.i("calling $address")
+        core.invite(address)
+        return null
+    } */
+    override fun call(destination: String): CallError? {
+        if (!core.isNetworkReachable) {
+            return CallError.NetworkUnreachable
+        }
+
+        if (!isRegistered()) {
+            return CallError.NotAuthenticated
+        }
+
+        if (core.inCall()) {
+            return CallError.AlreadyInCall
+        }
+
+       /* val address = if (destination.startsWith("<sip") || destination.startsWith("sip")) {
+            destination
+        } else {
             val address = core.defaultProxyConfig?.serverAddr ?: return CallError.NetworkUnreachable
             Factory.instance().createAddress(address)?.domain.let { host ->
                 "sip:$destination@$host"
             }
-        }
+            val domain = core.defaultAccount?.params?.serverAddress?.domain ?: return CallError.NetworkUnreachable
+            "sip:$destination@$domain"
+        } */
 
+        val address = if (destination.startsWith("<sip") || destination.startsWith("sip")) {
+            destination
+        } else {
+            val identity = core.defaultProxyConfig?.identityAddress ?: return CallError.NetworkUnreachable
+            val domain = identity.domain ?: return CallError.NetworkUnreachable
+            "sip:$destination@$domain"
+        }
         Timber.i("calling $address")
         core.invite(address)
         return null
@@ -182,7 +291,7 @@ class LinbridgeManager @Inject constructor(
 
     override fun answerCall(): CallError? {
         val currentCall = core.currentCall ?: return CallError.NoCallAvailable
-        val params = core.createCallParams(null) ?: TODO()
+        val params = core.createCallParams(null) ?: return CallError.NoCallAvailable
         params.isAudioEnabled = true
         params.isVideoEnabled = true
         params.isMicEnabled = true
@@ -209,6 +318,7 @@ class LinbridgeManager @Inject constructor(
             RegistrationState.Ok -> AuthenticationState.Ok
             RegistrationState.Cleared -> AuthenticationState.Cleared
             RegistrationState.Failed -> AuthenticationState.Failed
+            RegistrationState.Refreshing -> AuthenticationState.Progress
             else -> null
         }
     }
@@ -218,18 +328,14 @@ class LinbridgeManager @Inject constructor(
     }
 
     override fun getCurrentCredentials(): Credentials? {
-        if (core.authInfoList.isEmpty()) {
-            return null
-        }
-        val info = core.authInfoList[0]
-        val proxy = core.defaultProxyConfig
-        val domain = info.domain ?: return null
+        val account = core.defaultAccount ?: return null
+        val info = core.authInfoList.firstOrNull() ?: return null
         return Credentials(
-            domain.substringBefore(':'),
-            domain.substringAfter(':').toIntOrNull() ?: 5060,
-            info.username,
+             info.domain?.substringBefore(":") ?: return null,
+             info.domain?.substringAfter(":")?.toIntOrNull() ?: 5060,
+             info.username,
             info.password,
-            proxy?.serverAddr,
+            account.params.serverAddress?.asStringUriOnly(),
             info.userid
         )
     }
@@ -260,9 +366,42 @@ class LinbridgeManager @Inject constructor(
         return core.currentCall?.duration ?: -1
     }
 
-    //<editor-fold desc="CoreListener">
-    override fun onRegistrationStateChanged(core: Core, proxyConfig: ProxyConfig, cstate: RegistrationState?, message: String) {
-        registrationState = cstate
+    override fun onAccountRegistrationStateChanged(core: Core, account: Account, state: RegistrationState?, message: String) {
+        if (state == RegistrationState.Failed && isSrvRecordAvailable) {
+            registrationState = RegistrationState.Refreshing
+            tryNextPossibleSRVRecord()
+        } else {
+            registrationState = state
+        }
+
+    }
+
+    private fun tryNextPossibleSRVRecord() {
+        if (currentSrvIndex <= possibleSrvRecords.size -1) {
+            LinphoneScope.launch {
+                authenticate(
+                    host = core.defaultAccount?.params?.domain.toString(),
+                    port = core.defaultAccount?.params?.serverAddress?.port ?: 5060,
+                    authId = core.defaultAccount?.params?.identityAddress?.username,
+                    username = core.defaultAccount?.params?.identityAddress?.username ?: "",
+                    password = core.defaultAccount?.params?.identityAddress?.username ?: "",
+                    proxy = core.defaultAccount?.params?.serverAddress?.asStringUriOnly()
+                )
+            }
+        } else {
+            Timber.i("No more SRV records to try")
+            registrationState = RegistrationState.Failed
+        }
+    }
+    @Deprecated("Deprecated in Java", ReplaceWith("TODO(\"Not yet implemented\")"))
+    override fun onRegistrationStateChanged(
+        core: Core,
+        proxyConfig: ProxyConfig,
+        state: RegistrationState?,
+        message: String
+    ) {
+        Timber.i("error message: $message")
+
     }
 
     override fun onSubscribeReceived(core: Core, linphoneEvent: Event, subscribeEvent: String, body: Content?) {

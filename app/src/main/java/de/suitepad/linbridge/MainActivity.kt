@@ -1,19 +1,23 @@
 package de.suitepad.linbridge
 
 import android.Manifest
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import androidx.appcompat.app.AlertDialog
 import android.text.Html
 import android.view.View
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.sendgrid.SendGrid
 import de.suitepad.linbridge.databinding.ActivityMainBinding
 import de.suitepad.linbridge.databinding.DialogSendlogsBinding
+import de.suitepad.linbridge.di.LinphoneScope
 import de.suitepad.linbridge.helper.LogsExportHelper
 import de.suitepad.linbridge.logger.LogCatcher
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.linphone.core.Factory
 import org.linphone.core.LogCollectionState
 
@@ -42,6 +46,7 @@ class MainActivity : AppCompatActivity(), LogCatcher.LogListener {
         binding.sendButton.setOnClickListener {
             sendButton()
         }
+
     }
 
     override fun onResume() {
@@ -52,6 +57,11 @@ class MainActivity : AppCompatActivity(), LogCatcher.LogListener {
     override fun onStop() {
         super.onStop()
         getLogCatcher().removeLogListener(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        LinphoneScope.shutdown()
     }
 
     @Suppress("DEPRECATION")

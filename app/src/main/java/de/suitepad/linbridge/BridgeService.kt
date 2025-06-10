@@ -19,8 +19,10 @@ import de.suitepad.linbridge.api.core.AuthenticationState
 import de.suitepad.linbridge.api.core.CallEndReason
 import de.suitepad.linbridge.api.core.CallError
 import de.suitepad.linbridge.api.core.Credentials
+import de.suitepad.linbridge.di.LinphoneScope
 import de.suitepad.linbridge.dispatcher.IBridgeEventDispatcher
 import de.suitepad.linbridge.manager.IManager
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
@@ -124,14 +126,17 @@ class BridgeService : Service(), IBridgeService {
             return
         } else {
             FirebaseCrashlytics.getInstance().setCustomKey("credentials", "sip:${credentials.username}@${credentials.host}")
-            linphoneManager.authenticate(
-                credentials.host,
-                if (credentials.port == 0) 5060 else credentials.port,
-                credentials.authId,
-                credentials.username,
-                credentials.password,
-                credentials.proxy
-            )
+
+            LinphoneScope.launch {
+                linphoneManager.authenticate(
+                    credentials.host,
+                    if (credentials.port == 0) 5060 else credentials.port,
+                    credentials.authId,
+                    credentials.username,
+                    credentials.password,
+                    credentials.proxy
+                )
+            }
         }
     }
 
