@@ -560,7 +560,7 @@ fun Core.maybeConfigureDevice() {
     when (Build.VERSION.SDK_INT) {
         Build.VERSION_CODES.Q -> {
             // Specific configuration for MK4 devices (running Android 10)
-            // needs to be paired with EngineeringMode mic gain = 208
+            // needs to be paired with EngineeringMode mic gain = 200
 
             // gain settings (will be applied on top of EngineeringMode App gain settings)
             micGainDb = 3.0f
@@ -577,7 +577,7 @@ fun Core.maybeConfigureDevice() {
             // noise gate configuration
             // ideal settings as per test Burak/Frank 13-Jan-2026
             config.setInt("sound", "noisegate", 1)
-            config.setFloat("sound", "ng_thres", 0.02f)
+            config.setFloat("sound", "ng_thres", 0.015f)
             config.setFloat("sound", "ng_floorgain", 0.5f)
 
             // more configuration
