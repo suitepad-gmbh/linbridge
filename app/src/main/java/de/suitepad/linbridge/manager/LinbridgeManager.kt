@@ -559,20 +559,37 @@ fun Core.getConfiguration(): AudioConfiguration {
 fun Core.maybeConfigureDevice() {
     when (Build.VERSION.SDK_INT) {
         Build.VERSION_CODES.Q -> {
-            isEchoLimiterEnabled = false
+            // Specific configuration for MK4 devices (running Android 10)
+            // needs to be paired with EngineeringMode mic gain = 200
+
+            // gain settings (will be applied on top of EngineeringMode App gain settings)
+            micGainDb = 3.0f
+            playbackGainDb = 3.0f
+
+            // misc settings
+            isAdaptiveRateControlEnabled = true
+            config.setString("sound", "el_type", "mic")
+
+            // echo canceller settings
             isEchoCancellationEnabled = true
+            isEchoLimiterEnabled = false
 
+            // noise gate configuration
+            // ideal settings as per test Burak/Frank 13-Jan-2026
             config.setInt("sound", "noisegate", 1)
-            config.setFloat("sound", "ng_thres", 0.06f)
-            config.setFloat("sound", "ng_floorgain", 0.03f)
+            config.setFloat("sound", "ng_thres", 0.015f)
+            config.setFloat("sound", "ng_floorgain", 0.5f)
 
+            // more configuration
             config.setInt("sound", "echocancellation", 1)
             config.setInt("sound", "echolimiter", 0)
-            config.setInt("sound", "agc", 1)
+            config.setFloat("sound", "mic_gain_db", 3.0f);
+            config.setFloat("sound", "playback_gain_db", 3.0f);
+            config.setInt("sound", "agc", 0) // AGC off -> doesn't do much, can confuse the noise gate
             config.setInt("sound", "ec_tail_len", 250)
             mediastreamerFactory.setDeviceInfo(
                 "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
-                org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 0, 250
+                org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 250, 0
             )
         }
     }
