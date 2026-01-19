@@ -1,4 +1,8 @@
 # CHANGELOG
+### 2.0.8
+- Fix: Build Failure
+- Fix: MK4 voice cutouts
+
 ### 2.0.6
 - FEAT: SRV Failover + remove deprecation
 
