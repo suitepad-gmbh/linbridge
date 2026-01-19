@@ -47,9 +47,6 @@ jobs:
           echo $GOOGLE_SERVICES | base64 -d > app/google-services.json
         env:
           GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES }}
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 15
       - name: Assemble Release
         run: |
           docker compose run app ./gradlew androidDependencies
