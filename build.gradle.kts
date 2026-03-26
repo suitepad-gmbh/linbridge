@@ -28,7 +28,7 @@ allprojects {
         mavenCentral()
         mavenLocal()
         google()
-        maven { setUrl("https://linphone.org/maven_repository/") }
+        maven { setUrl("https://download.linphone.org/maven_repository") }
         maven { setUrl("https://suitepad.mycloudrepo.io/public/repositories/public") }
     }
 }
