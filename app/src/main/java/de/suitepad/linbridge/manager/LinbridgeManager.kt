@@ -59,12 +59,11 @@ class LinbridgeManager @Inject constructor(
 
     private var isSrvRecordAvailable = false
 
+    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    private var micMuteSupported = true
+
     val keepAliveTask = object : TimerTask() {
         override fun run() {
-            val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
-            audioManager.isMicrophoneMute = false
-            audioManager.isSpeakerphoneOn = false
             core.iterate()
         }
     }
@@ -299,8 +298,8 @@ class LinbridgeManager @Inject constructor(
         params.audioDirection = MediaDirection.SendRecv
         params.isLowBandwidthEnabled = true
         params.inputAudioDevice = core.defaultInputAudioDevice
+        applyCallAudioState()
         currentCall.acceptWithParams(params)
-        //currentCall.accept()
         return null
     }
 
@@ -497,6 +496,32 @@ class LinbridgeManager @Inject constructor(
         Timber.i("::: incTimeout = ${core.incTimeout} ::: inCallTimeout = ${core.inCallTimeout}")
         super.onCallStateChanged(core, call, cstate, message)
         callEndReason = call.reason?.toString()?.let { CallEndReason.valueOf(it) } ?: CallEndReason.None
+
+        when (cstate) {
+            Call.State.Connected,
+            Call.State.StreamsRunning -> applyCallAudioState()
+            Call.State.End,
+            Call.State.Released,
+            Call.State.Error -> {
+                audioManager.mode = AudioManager.MODE_NORMAL
+                Timber.i("Audio mode set to MODE_NORMAL (call ended)")
+            }
+            else -> { /* no audio mode change needed */ }
+        }
+    }
+
+    private fun applyCallAudioState() {
+        audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+        if (micMuteSupported) {
+            try {
+                audioManager.isMicrophoneMute = false
+            } catch (e: Exception) {
+                micMuteSupported = false
+                Timber.w(e, "Mic mute not supported by audio HAL, skipping future attempts")
+            }
+        }
+        audioManager.isSpeakerphoneOn = false
+        Timber.i("Audio state applied: MODE_IN_COMMUNICATION, mic unmuted, speaker off")
     }
 
     override fun onNotifyReceived(core: Core, linphoneEvent: Event, notifiedEvent: String, body: Content?) {
