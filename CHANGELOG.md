@@ -1,4 +1,9 @@
 # CHANGELOG
+### 2.1.0
+- fix: stop audio state from being enforced in the Linphone iterate loop
+- Enable tag-based releases in workflow
+- Update Linphone Maven repository URL
+
 ### 2.0.8
 - Fix: Build Failure
 - Fix: MK4 voice cutouts
