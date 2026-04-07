@@ -34,9 +34,8 @@ object DnsSrvLookupManager {
                 withContext(Dispatchers.Main) {
                     onResult(srvRecords)
                 }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 onError(e)
-
             }
         }
     }
