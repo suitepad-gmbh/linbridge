@@ -1,4 +1,8 @@
 # CHANGELOG
+### 2.1.1
+- FIX: crash on Android 6
+- FIX: double ringtone
+
 ### 2.1.0
 - fix: stop audio state from being enforced in the Linphone iterate loop
 - Enable tag-based releases in workflow
