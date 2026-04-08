@@ -79,7 +79,9 @@ class LinbridgeManager @Inject constructor(
         core.rootCa = "$baseDir/rootca.pem"
         core.ringback = "$baseDir/ringback.wav"
         defaultRingtonePath = "$baseDir/toymono.wav"
-        core.ring = null
+        core.ring = defaultRingtonePath
+        core.config.setInt("sound", "use_native_ringing", 0)
+        core.config.setInt("sound", "disable_ringing", 1)
         core.incTimeout = 40
 
         core.clearAllAuthInfo()
@@ -100,6 +102,7 @@ class LinbridgeManager @Inject constructor(
     override fun start() {
         core.isMicEnabled = true
         core.start()
+        core.setNativeRingingEnabled(false)
         core.isDnsSrvEnabled = true
         iterate()
     }
