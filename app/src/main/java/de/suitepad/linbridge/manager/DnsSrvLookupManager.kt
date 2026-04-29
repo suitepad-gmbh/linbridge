@@ -12,11 +12,14 @@ private const val FALLBACK_DNS_SERVER = "8.8.8.8"
 
 object DnsSrvLookupManager {
 
+    enum class Transport { UDP, TCP, TLS }
+
     data class SrvResult(
         val target: String,
         val port: Int,
         val priority: Int,
         val weight: Int,
+        val transport: Transport = Transport.UDP,
     )
 
     /**
@@ -43,15 +46,22 @@ object DnsSrvLookupManager {
 
     /**
      * Queries SRV records for standard SIP service types per RFC 3263.
-     * Queries: _sip._udp, _sip._tcp, _sips._tcp
-     * Returns all results merged, sorted by priority then weight.
+     * Queries: _sip._udp (UDP), _sip._tcp (TCP), _sips._tcp (TLS)
+     * Each result carries the transport it was discovered under.
+     * Results are merged and sorted by priority then weight.
      */
     suspend fun lookupSipSrvRecords(domain: String): List<SrvResult> =
         withContext(Dispatchers.IO) {
-            val services = listOf("_sip._udp", "_sip._tcp", "_sips._tcp")
+            val services = listOf(
+                "_sip._udp.$domain" to Transport.UDP,
+                "_sip._tcp.$domain" to Transport.TCP,
+                "_sips._tcp.$domain" to Transport.TLS,
+            )
             val results = mutableListOf<SrvResult>()
-            for (service in services) {
-                results.addAll(lookupSrvRecords("$service.$domain"))
+            for ((serviceDomain, transport) in services) {
+                lookupSrvRecords(serviceDomain)
+                    .map { it.copy(transport = transport) }
+                    .also { results.addAll(it) }
             }
             results.sortedWith(compareBy<SrvResult> { it.priority }.thenByDescending { it.weight })
         }
