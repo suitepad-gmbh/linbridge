@@ -59,14 +59,14 @@ class LinbridgeManager @Inject constructor(
 
     // Original auth params stored for SRV fallback retry
     private var lastAuthHost: String? = null
-    private var lastAuthPort: Int = 5060
     private var lastAuthId: String? = null
     private var lastAuthUsername: String? = null
+
     // Effective host normalized to a plain DNS label for SRV lookups (no scheme/brackets/port/params)
     private var lastSrvDomain: String? = null
 
     // Fallback SRV state (used when linphone's native SRV resolution fails)
-    private var srvFallbackEnabled = false  // false when caller supplied an explicit non-default port
+    private var srvFallbackEnabled = false // false when caller supplied an explicit non-default port
     private var fallbackSrvRecords: List<DnsSrvLookupManager.SrvResult> = emptyList()
     private var fallbackSrvIndex = 0
     private var fallbackAttempted = false
@@ -157,7 +157,6 @@ class LinbridgeManager @Inject constructor(
         // Store all params for SRV fallback retry
         lastPassword = password
         lastAuthHost = host
-        lastAuthPort = port
         lastAuthId = authId
         lastAuthUsername = username
 
@@ -213,11 +212,12 @@ class LinbridgeManager @Inject constructor(
         if (explicitPort != null) {
             serverAddress.port = explicitPort
         }
-        serverAddress.transport = when (srvTransport) {
-            DnsSrvLookupManager.Transport.UDP -> TransportType.Udp
-            DnsSrvLookupManager.Transport.TCP -> TransportType.Tcp
-            DnsSrvLookupManager.Transport.TLS -> TransportType.Tls
-        }
+        serverAddress.transport =
+            when (srvTransport) {
+                DnsSrvLookupManager.Transport.UDP -> TransportType.Udp
+                DnsSrvLookupManager.Transport.TCP -> TransportType.Tcp
+                DnsSrvLookupManager.Transport.TLS -> TransportType.Tls
+            }
 
         val accountParams = core.createAccountParams().apply {
             this.identityAddress = identity
@@ -249,12 +249,15 @@ class LinbridgeManager @Inject constructor(
         var d = address.removePrefix("<").removeSuffix(">")
         d = d.removePrefix("sips:").removePrefix("sip:")
         if ('@' in d) d = d.substringAfter('@')
-        d = d.substringBefore(';')          // strip URI parameters
-        d = d.replace(Regex(":\\d+$"), "")  // strip trailing :port
+        d = d.substringBefore(';') // strip URI parameters
+        d = d.replace(Regex(":\\d+$"), "") // strip trailing :port
         return d
     }
 
-    private fun buildSipProxy(proxy: String, transport: DnsSrvLookupManager.Transport = DnsSrvLookupManager.Transport.UDP): String {
+    private fun buildSipProxy(
+        proxy: String,
+        transport: DnsSrvLookupManager.Transport = DnsSrvLookupManager.Transport.UDP,
+    ): String {
         if (proxy.startsWith("sip:") || proxy.startsWith("sips:") ||
             proxy.startsWith("<sip:") || proxy.startsWith("<sips:")
         ) {
@@ -424,9 +427,9 @@ class LinbridgeManager @Inject constructor(
     }
 
     private fun canRetryFallbackSrv(): Boolean {
-        if (!srvFallbackEnabled) return false          // explicit port supplied — SRV must not override
+        if (!srvFallbackEnabled) return false // explicit port supplied — SRV must not override
         if (lastSrvDomain.isNullOrBlank()) return false // no domain to do SRV on
-        if (!fallbackAttempted) return true             // haven't tried fallback DNS yet
+        if (!fallbackAttempted) return true // haven't tried fallback DNS yet
         return fallbackSrvIndex < fallbackSrvRecords.size // still have records to try
     }
 
@@ -458,7 +461,7 @@ class LinbridgeManager @Inject constructor(
                     Timber.i(
                         "Trying fallback SRV record: ${record.target}:${record.port} " +
                             "(priority=${record.priority}, weight=${record.weight}, " +
-                            "$fallbackSrvIndex/${fallbackSrvRecords.size}",
+                            "$fallbackSrvIndex/${fallbackSrvRecords.size})",
                     )
                     registerAccount(
                         host = lastAuthHost ?: return@launch,

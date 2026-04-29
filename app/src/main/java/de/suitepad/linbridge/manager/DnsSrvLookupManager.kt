@@ -55,11 +55,12 @@ object DnsSrvLookupManager {
      */
     suspend fun lookupSipSrvRecords(domain: String): List<SrvResult> =
         withContext(Dispatchers.IO) {
-            val services = listOf(
-                "_sip._udp.$domain" to Transport.UDP,
-                "_sip._tcp.$domain" to Transport.TCP,
-                "_sips._tcp.$domain" to Transport.TLS,
-            )
+            val services =
+                listOf(
+                    "_sip._udp.$domain" to Transport.UDP,
+                    "_sip._tcp.$domain" to Transport.TCP,
+                    "_sips._tcp.$domain" to Transport.TLS,
+                )
             val results = mutableListOf<SrvResult>()
             for ((serviceDomain, transport) in services) {
                 lookupSrvRecords(serviceDomain)
@@ -79,14 +80,15 @@ object DnsSrvLookupManager {
      */
     internal fun weightedSrvOrder(records: List<SrvResult>): List<SrvResult> {
         val ordered = mutableListOf<SrvResult>()
-        records.groupBy { it.priority }
+        records
+            .groupBy { it.priority }
             .entries
             .sortedBy { it.key }
             .forEach { (_, group) ->
                 val pool = group.toMutableList()
                 while (pool.isNotEmpty()) {
                     val totalWeight = pool.sumOf { it.weight }
-                    var target = if (totalWeight > 0) Random.nextInt(totalWeight + 1) else 0
+                    var target = if (totalWeight > 0) Random.nextInt(totalWeight) + 1 else 0
                     val iterator = pool.iterator()
                     var selected: SrvResult? = null
                     while (iterator.hasNext()) {
@@ -118,10 +120,11 @@ object DnsSrvLookupManager {
                 lookup.setResolver(SimpleResolver(resolver))
             }
             val records = lookup.run()
-            val raw = records
-                ?.mapNotNull { it as? SRVRecord }
-                ?.map { SrvResult(it.target.toString().trimEnd('.'), it.port, it.priority, it.weight) }
-                ?: emptyList()
+            val raw =
+                records
+                    ?.mapNotNull { it as? SRVRecord }
+                    ?.map { SrvResult(it.target.toString().trimEnd('.'), it.port, it.priority, it.weight) }
+                    ?: emptyList()
             weightedSrvOrder(raw)
         } catch (e: Exception) {
             Timber.w(e, "SRV lookup failed for $serviceDomain" + (resolver?.let { " via $it" } ?: ""))
