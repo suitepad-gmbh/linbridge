@@ -175,7 +175,7 @@ class LinbridgeManager @Inject constructor(
         username: String,
         password: String,
         proxy: String,
-        explicitPort: Int?
+        explicitPort: Int?,
     ) {
         clearCredentials()
 
@@ -220,13 +220,16 @@ class LinbridgeManager @Inject constructor(
         core.defaultAccount = account
         core.refreshRegisters()
 
-        Timber.i("Registration attempt for $identity via $sipProxy" +
-            (explicitPort?.let { ":$it" } ?: " (SRV native)"))
+        Timber.i(
+            "Registration attempt for $identity via $sipProxy" +
+                (explicitPort?.let { ":$it" } ?: " (SRV native)"),
+        )
     }
 
     private fun buildSipProxy(proxy: String): String {
         if (proxy.startsWith("sip:") || proxy.startsWith("sips:") ||
-            proxy.startsWith("<sip:") || proxy.startsWith("<sips:")) {
+            proxy.startsWith("<sip:") || proxy.startsWith("<sips:")
+        ) {
             return proxy.removePrefix("<").removeSuffix(">")
         }
         return "sip:$proxy"
@@ -398,41 +401,44 @@ class LinbridgeManager @Inject constructor(
     }
 
     private fun tryFallbackSrv() {
-        fallbackJob = LinphoneScope.launch {
-            // On first failure, perform SRV lookup via system DNS + Google DNS fallback
-            if (!fallbackAttempted) {
-                fallbackAttempted = true
-                val proxy = lastAuthProxy ?: return@launch
-                Timber.i("Native SRV registration failed, attempting fallback SRV lookup for $proxy")
-                fallbackSrvRecords = DnsSrvLookupManager.lookupSipSrvRecords(proxy)
-                fallbackSrvIndex = 0
+        fallbackJob =
+            LinphoneScope.launch {
+                // On first failure, perform SRV lookup via system DNS + Google DNS fallback
+                if (!fallbackAttempted) {
+                    fallbackAttempted = true
+                    val proxy = lastAuthProxy ?: return@launch
+                    Timber.i("Native SRV registration failed, attempting fallback SRV lookup for $proxy")
+                    fallbackSrvRecords = DnsSrvLookupManager.lookupSipSrvRecords(proxy)
+                    fallbackSrvIndex = 0
 
-                if (fallbackSrvRecords.isEmpty()) {
-                    Timber.i("No fallback SRV records found, registration failed")
+                    if (fallbackSrvRecords.isEmpty()) {
+                        Timber.i("No fallback SRV records found, registration failed")
+                        registrationState = RegistrationState.Failed
+                        return@launch
+                    }
+                }
+
+                if (fallbackSrvIndex < fallbackSrvRecords.size) {
+                    val record = fallbackSrvRecords[fallbackSrvIndex]
+                    fallbackSrvIndex++
+                    Timber.i(
+                        "Trying fallback SRV record: ${record.target}:${record.port} " +
+                            "(priority=${record.priority}, weight=${record.weight}, " +
+                            "$fallbackSrvIndex/${fallbackSrvRecords.size}",
+                    )
+                    registerAccount(
+                        host = lastAuthHost ?: return@launch,
+                        authId = lastAuthId,
+                        username = lastAuthUsername ?: return@launch,
+                        password = lastPassword ?: return@launch,
+                        proxy = record.target,
+                        explicitPort = record.port,
+                    )
+                } else {
+                    Timber.i("All fallback SRV records exhausted, registration failed")
                     registrationState = RegistrationState.Failed
-                    return@launch
                 }
             }
-
-            if (fallbackSrvIndex < fallbackSrvRecords.size) {
-                val record = fallbackSrvRecords[fallbackSrvIndex]
-                fallbackSrvIndex++
-                Timber.i("Trying fallback SRV record: ${record.target}:${record.port} " +
-                    "(priority=${record.priority}, weight=${record.weight}, " +
-                    "${fallbackSrvIndex}/${fallbackSrvRecords.size})")
-                registerAccount(
-                    host = lastAuthHost ?: return@launch,
-                    authId = lastAuthId,
-                    username = lastAuthUsername ?: return@launch,
-                    password = lastPassword ?: return@launch,
-                    proxy = record.target,
-                    explicitPort = record.port
-                )
-            } else {
-                Timber.i("All fallback SRV records exhausted, registration failed")
-                registrationState = RegistrationState.Failed
-            }
-        }
     }
     @Deprecated("Deprecated in Java", ReplaceWith("TODO(\"Not yet implemented\")"))
     override fun onRegistrationStateChanged(
@@ -601,7 +607,7 @@ fun Core.enableCodecs(types: Array<AudioCodec>?) {
                 audioCodec != null // enable all codecs known to the AudioCodec enum
             } else {
                 types.contains(audioCodec) // enable only explicitly requested codecs
-            }
+            },
         )
     }
 }

@@ -16,7 +16,7 @@ object DnsSrvLookupManager {
         val target: String,
         val port: Int,
         val priority: Int,
-        val weight: Int
+        val weight: Int,
     )
 
     /**
@@ -56,14 +56,18 @@ object DnsSrvLookupManager {
             results.sortedWith(compareBy<SrvResult> { it.priority }.thenByDescending { it.weight })
         }
 
-    private fun performLookup(serviceDomain: String, resolver: String?): List<SrvResult> {
-        return try {
+    private fun performLookup(
+        serviceDomain: String,
+        resolver: String?,
+    ): List<SrvResult> =
+        try {
             val lookup = Lookup(serviceDomain, Type.SRV)
             if (resolver != null) {
                 lookup.setResolver(SimpleResolver(resolver))
             }
             val records = lookup.run()
-            records?.mapNotNull { it as? SRVRecord }
+            records
+                ?.mapNotNull { it as? SRVRecord }
                 ?.map { SrvResult(it.target.toString().trimEnd('.'), it.port, it.priority, it.weight) }
                 ?.sortedWith(compareBy<SrvResult> { it.priority }.thenByDescending { it.weight })
                 ?: emptyList()
@@ -71,5 +75,4 @@ object DnsSrvLookupManager {
             Timber.w(e, "SRV lookup failed for $serviceDomain" + (resolver?.let { " via $it" } ?: ""))
             emptyList()
         }
-    }
 }
