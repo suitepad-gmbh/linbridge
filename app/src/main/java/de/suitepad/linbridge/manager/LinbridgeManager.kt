@@ -62,11 +62,11 @@ class LinbridgeManager @Inject constructor(
     private var lastAuthPort: Int = 5060
     private var lastAuthId: String? = null
     private var lastAuthUsername: String? = null
-    private var lastAuthProxy: String? = null
     // Effective host normalized to a plain DNS label for SRV lookups (no scheme/brackets/port/params)
     private var lastSrvDomain: String? = null
 
     // Fallback SRV state (used when linphone's native SRV resolution fails)
+    private var srvFallbackEnabled = false  // false when caller supplied an explicit non-default port
     private var fallbackSrvRecords: List<DnsSrvLookupManager.SrvResult> = emptyList()
     private var fallbackSrvIndex = 0
     private var fallbackAttempted = false
@@ -160,7 +160,6 @@ class LinbridgeManager @Inject constructor(
         lastAuthPort = port
         lastAuthId = authId
         lastAuthUsername = username
-        lastAuthProxy = proxy
 
         // Compute the effective registration proxy (fall back to host when proxy is absent/blank),
         // then normalize to a plain hostname for DNS SRV lookups.
@@ -176,6 +175,7 @@ class LinbridgeManager @Inject constructor(
         // Only pass an explicit port when it differs from the SIP default (5060); a non-default
         // port means the caller is targeting a specific endpoint and SRV should not override it.
         val explicitPort = port.takeIf { it != DEFAULT_SIP_PORT }
+        srvFallbackEnabled = explicitPort == null
         registerAccount(host, authId, username, password, effectiveProxy, explicitPort = explicitPort)
     }
 
@@ -185,7 +185,9 @@ class LinbridgeManager @Inject constructor(
         username: String,
         password: String,
         proxy: String,
-        explicitPort: Int?,        srvTransport: DnsSrvLookupManager.Transport = DnsSrvLookupManager.Transport.UDP,    ) {
+        explicitPort: Int?,
+        srvTransport: DnsSrvLookupManager.Transport = DnsSrvLookupManager.Transport.UDP,
+    ) {
         clearCredentials()
 
         val identity = Factory.instance().createAddress("sip:$username@$host")
@@ -422,8 +424,9 @@ class LinbridgeManager @Inject constructor(
     }
 
     private fun canRetryFallbackSrv(): Boolean {
+        if (!srvFallbackEnabled) return false          // explicit port supplied — SRV must not override
         if (lastSrvDomain.isNullOrBlank()) return false // no domain to do SRV on
-        if (!fallbackAttempted) return true // haven't tried fallback DNS yet
+        if (!fallbackAttempted) return true             // haven't tried fallback DNS yet
         return fallbackSrvIndex < fallbackSrvRecords.size // still have records to try
     }
 
