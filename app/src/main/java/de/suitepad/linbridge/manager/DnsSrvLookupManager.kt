@@ -1,54 +1,75 @@
 package de.suitepad.linbridge.manager
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.xbill.DNS.Lookup
 import org.xbill.DNS.SRVRecord
 import org.xbill.DNS.SimpleResolver
 import org.xbill.DNS.Type
 import timber.log.Timber
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
-private const val GOOGLE_DNS_SERVER = "8.8.8.8"
+private const val FALLBACK_DNS_SERVER = "8.8.8.8"
+
 object DnsSrvLookupManager {
 
-    private val job = Job()
-    private val scope = CoroutineScope(Dispatchers.IO + job)
+    data class SrvResult(
+        val target: String,
+        val port: Int,
+        val priority: Int,
+        val weight: Int
+    )
 
-    private fun lookupSrvRecords(serviceDomain: String, onResult: (List<SRVRecord>) -> Unit, onError: (Throwable) -> Unit ) {
-        scope.launch {
-            try {
-                val resolver = SimpleResolver(GOOGLE_DNS_SERVER)
-                val lookup = Lookup(serviceDomain, Type.SRV)
-                lookup.setResolver(resolver)
-                val records = lookup.run()
-                val srvRecords = (records?.mapNotNull { it as? SRVRecord } ?: emptyList()).sortedBy { it.priority }
-                if (srvRecords.isEmpty()) {
-                    Timber.i("No SRV records found for $serviceDomain")
-                }
-                withContext(Dispatchers.Main) {
-                    onResult(srvRecords)
-                }
-            } catch (e: Throwable) {
-                onError(e)
+    /**
+     * Performs SRV lookup using system DNS first, then falls back to Google DNS (8.8.8.8).
+     * Returns results sorted by priority (ascending), then weight (descending) within same priority.
+     */
+    suspend fun lookupSrvRecords(serviceDomain: String): List<SrvResult> =
+        withContext(Dispatchers.IO) {
+            val systemResult = performLookup(serviceDomain, resolver = null)
+            if (systemResult.isNotEmpty()) {
+                Timber.i("SRV lookup for $serviceDomain resolved via system DNS: ${systemResult.size} records")
+                return@withContext systemResult
             }
-        }
-    }
 
-    suspend fun lookupSrvRecordsSuspend(serviceDomain: String): List<SRVRecord> =
-        suspendCancellableCoroutine { cont ->
-            this.lookupSrvRecords(
-                serviceDomain = serviceDomain,
-                onResult = { cont.resume(it) },
-                onError = { cont.resumeWithException(it) }
-            )
+            Timber.i("System DNS returned no SRV records for $serviceDomain, trying fallback DNS ($FALLBACK_DNS_SERVER)")
+            val fallbackResult = performLookup(serviceDomain, resolver = FALLBACK_DNS_SERVER)
+            if (fallbackResult.isNotEmpty()) {
+                Timber.i("SRV lookup for $serviceDomain resolved via fallback DNS: ${fallbackResult.size} records")
+            } else {
+                Timber.i("No SRV records found for $serviceDomain via any resolver")
+            }
+            fallbackResult
         }
-    fun clear() {
-        job.cancel()
+
+    /**
+     * Queries SRV records for standard SIP service types per RFC 3263.
+     * Queries: _sip._udp, _sip._tcp, _sips._tcp
+     * Returns all results merged, sorted by priority then weight.
+     */
+    suspend fun lookupSipSrvRecords(domain: String): List<SrvResult> =
+        withContext(Dispatchers.IO) {
+            val services = listOf("_sip._udp", "_sip._tcp", "_sips._tcp")
+            val results = mutableListOf<SrvResult>()
+            for (service in services) {
+                results.addAll(lookupSrvRecords("$service.$domain"))
+            }
+            results.sortedWith(compareBy<SrvResult> { it.priority }.thenByDescending { it.weight })
+        }
+
+    private fun performLookup(serviceDomain: String, resolver: String?): List<SrvResult> {
+        return try {
+            val lookup = Lookup(serviceDomain, Type.SRV)
+            if (resolver != null) {
+                lookup.setResolver(SimpleResolver(resolver))
+            }
+            val records = lookup.run()
+            records?.mapNotNull { it as? SRVRecord }
+                ?.map { SrvResult(it.target.toString().trimEnd('.'), it.port, it.priority, it.weight) }
+                ?.sortedWith(compareBy<SrvResult> { it.priority }.thenByDescending { it.weight })
+                ?: emptyList()
+        } catch (e: Exception) {
+            Timber.w(e, "SRV lookup failed for $serviceDomain" + (resolver?.let { " via $it" } ?: ""))
+            emptyList()
+        }
     }
 }
