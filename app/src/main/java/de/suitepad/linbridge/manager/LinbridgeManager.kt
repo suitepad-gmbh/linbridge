@@ -104,6 +104,7 @@ class LinbridgeManager @Inject constructor(
         core.start()
         core.setNativeRingingEnabled(false)
         core.isDnsSrvEnabled = true
+        core.enableCodecs(null)
         iterate()
     }
 
@@ -558,9 +559,12 @@ fun Core.enableCodecs(types: Array<AudioCodec>?) {
     audioPayloadTypes.forEach { payloadType ->
         val audioCodec = AudioCodec.getAudioCodecByMimeAndRate(payloadType.mimeType, payloadType.clockRate)
         payloadType.enable(
-            (types.isNullOrEmpty() && audioCodec != null) || //  if not specifying codecs to open and the codec is supported by bell
-                    types?.contains(audioCodec) ?: false
-        ) // if codec is in the enabled codecs list
+            if (types.isNullOrEmpty()) {
+                audioCodec != null // enable all codecs known to the AudioCodec enum
+            } else {
+                types.contains(audioCodec) // enable only explicitly requested codecs
+            }
+        )
     }
 }
 
