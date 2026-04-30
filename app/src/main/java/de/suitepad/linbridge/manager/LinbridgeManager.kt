@@ -14,6 +14,7 @@ import de.suitepad.linbridge.api.core.CallEndReason
 import de.suitepad.linbridge.api.core.CallError
 import de.suitepad.linbridge.api.core.Credentials
 import de.suitepad.linbridge.di.LinphoneScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.linphone.core.AVPFMode
 import org.linphone.core.Account
@@ -35,12 +36,13 @@ import org.linphone.core.ProxyConfig
 import org.linphone.core.Reason
 import org.linphone.core.RegistrationState
 import org.linphone.core.TransportType
-import org.xbill.DNS.SRVRecord
 import timber.log.Timber
 import java.util.Timer
 import java.util.TimerTask
 import javax.inject.Inject
 
+
+private const val DEFAULT_SIP_PORT = 5060
 
 @RequiresApi(Build.VERSION_CODES.O)
 @ServiceScoped
@@ -53,11 +55,23 @@ class LinbridgeManager @Inject constructor(
 
     private var callEndReason: CallEndReason = CallEndReason.None
 
-    private  var possibleSrvRecords : MutableList<SRVRecord> = mutableListOf()
+    private var lastPassword: String? = null
 
-    private var currentSrvIndex = 0
+    // Original auth params stored for SRV fallback retry
+    private var lastAuthHost: String? = null
+    private var lastAuthId: String? = null
+    private var lastAuthUsername: String? = null
 
-    private var isSrvRecordAvailable = false
+    // Effective host normalized to a plain DNS label for SRV lookups (no scheme/brackets/port/params)
+    private var lastSrvDomain: String? = null
+    private var lastSrvSips: Boolean = false
+
+    // Fallback SRV state (used when linphone's native SRV resolution fails)
+    private var srvFallbackEnabled = false // false when any explicit port is known (port arg or proxy string)
+    private var fallbackSrvRecords: List<DnsSrvLookupManager.SrvResult> = emptyList()
+    private var fallbackSrvIndex = 0
+    private var fallbackAttempted = false
+    private var fallbackJob: Job? = null
 
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private var micMuteSupported = true
@@ -104,6 +118,7 @@ class LinbridgeManager @Inject constructor(
         core.start()
         core.setNativeRingingEnabled(false)
         core.isDnsSrvEnabled = true
+        core.enableCodecs(null)
         iterate()
     }
 
@@ -136,23 +151,57 @@ class LinbridgeManager @Inject constructor(
         password: String,
         proxy: String?
     ) {
-        if (possibleSrvRecords.isEmpty()) {
-            possibleSrvRecords = DnsSrvLookupManager.lookupSrvRecordsSuspend("_sip._udp.$proxy").toMutableList()
-            isSrvRecordAvailable = possibleSrvRecords.isNotEmpty()
-        }
+        // Cancel any in-flight fallback retry
+        fallbackJob?.cancel()
+        fallbackJob = null
 
+        // Store all params for SRV fallback retry
+        lastPassword = password
+        lastAuthHost = host
+        lastAuthId = authId
+        lastAuthUsername = username
 
-        val (effectiveProxy, shouldClearCredentials) = if (isSrvRecordAvailable) {
-            val srvProxy = possibleSrvRecords[currentSrvIndex].target.toString().trimEnd('.')
-            currentSrvIndex++
-            srvProxy to false
-        } else {
-            (proxy ?: "$username@$host") to true
-        }
+        // Compute the effective registration proxy (fall back to host when proxy is absent/blank),
+        // then normalize to a plain hostname for DNS SRV lookups.
+        val effectiveProxy = proxy?.takeIf { it.isNotBlank() } ?: host
+        lastSrvDomain = extractSrvDomain(effectiveProxy)
+        lastSrvSips = effectiveProxy.removePrefix("<").startsWith("sips:")
 
-        if (shouldClearCredentials) {
-            clearCredentials()
-        }
+        // Reset fallback state on fresh authentication
+        fallbackSrvRecords = emptyList()
+        fallbackSrvIndex = 0
+        fallbackAttempted = false
+
+        // Primary path: let linphone's native SRV handle resolution (isDnsSrvEnabled = true).
+        // Disable SRV fallback whenever an explicit target port is known — either from the port
+        // argument (non-default) or from a port encoded in the proxy string (e.g.
+        // "proxy.example.com:5080"). In both cases we are targeting a specific endpoint and SRV
+        // must not override it.
+        val explicitPort =
+            port.takeIf { it != DEFAULT_SIP_PORT }
+                ?: extractPortFromAddress(effectiveProxy)
+        srvFallbackEnabled = explicitPort == null
+        // Derive transport from the proxy scheme so the primary registration is consistent:
+        // sips: → TLS, everything else → UDP (TCP is only used via fallback SRV records).
+        val initialTransport =
+            if (effectiveProxy.removePrefix("<").startsWith("sips:")) {
+                DnsSrvLookupManager.Transport.TLS
+            } else {
+                DnsSrvLookupManager.Transport.UDP
+            }
+        registerAccount(host, authId, username, password, effectiveProxy, explicitPort = explicitPort, srvTransport = initialTransport)
+    }
+
+    private fun registerAccount(
+        host: String,
+        authId: String?,
+        username: String,
+        password: String,
+        proxy: String,
+        explicitPort: Int?,
+        srvTransport: DnsSrvLookupManager.Transport = DnsSrvLookupManager.Transport.UDP,
+    ) {
+        clearCredentials()
 
         val identity = Factory.instance().createAddress("sip:$username@$host")
         if (identity == null) {
@@ -165,15 +214,24 @@ class LinbridgeManager @Inject constructor(
         )
         core.addAuthInfo(authInfo)
 
-        val sipProxy = buildSipProxy(effectiveProxy, proxy, username, host)
+        val sipProxy = buildSipProxy(proxy, srvTransport)
         val serverAddress = Factory.instance().createAddress(sipProxy)
         if (serverAddress == null) {
-            Timber.e("Failed to create proxy address from sip:${effectiveProxy ?: host}")
+            Timber.e("Failed to create proxy address from $sipProxy")
             return
         }
 
-        serverAddress.port = port
-        serverAddress.transport = TransportType.Udp
+        // Only set port when explicitly provided (e.g., from SRV fallback record).
+        // Omitting the port allows linphone's native SRV to determine it per RFC 3263.
+        if (explicitPort != null) {
+            serverAddress.port = explicitPort
+        }
+        serverAddress.transport =
+            when (srvTransport) {
+                DnsSrvLookupManager.Transport.UDP -> TransportType.Udp
+                DnsSrvLookupManager.Transport.TCP -> TransportType.Tcp
+                DnsSrvLookupManager.Transport.TLS -> TransportType.Tls
+            }
 
         val accountParams = core.createAccountParams().apply {
             this.identityAddress = identity
@@ -191,32 +249,58 @@ class LinbridgeManager @Inject constructor(
         core.defaultAccount = account
         core.refreshRegisters()
 
-        Timber.i("Authentication setup complete for $identity")
+        Timber.i(
+            "Registration attempt for $identity via $sipProxy" +
+                (explicitPort?.let { ":$it" } ?: " (SRV native)"),
+        )
+    }
+
+    /**
+     * Strips scheme (sip:/sips:), angle brackets, userinfo (@), URI parameters (;), and port
+     * from a SIP address, returning a plain hostname suitable for DNS SRV queries.
+     */
+    private fun extractSrvDomain(address: String): String {
+        // Reuse extractPortFromAddress parsing; see that method for the stripping logic.
+        // (Duplicate stripping here is intentional to keep extractSrvDomain self-contained.)
+        var d = address.removePrefix("<").removeSuffix(">")
+        d = d.removePrefix("sips:").removePrefix("sip:")
+        if ('@' in d) d = d.substringAfter('@')
+        d = d.substringBefore(';') // strip URI parameters
+        d = d.replace(Regex(":\\d+$"), "") // strip trailing :port
+        return d
+    }
+
+    /**
+     * Returns the explicit port encoded in a SIP address string (bare host:port, or sip:/sips: URI),
+     * or null when no port is present. Used to detect caller-specified endpoints that SRV must not
+     * override.
+     */
+    private fun extractPortFromAddress(address: String): Int? {
+        var d = address.removePrefix("<").removeSuffix(">")
+        d = d.removePrefix("sips:").removePrefix("sip:")
+        if ('@' in d) d = d.substringAfter('@')
+        d = d.substringBefore(';')
+        return Regex(":(\\d+)$")
+            .find(d)
+            ?.groupValues
+            ?.get(1)
+            ?.toIntOrNull()
     }
 
     private fun buildSipProxy(
-        resolvedProxy: String?,
-        originalProxy: String?,
-        username: String,
-        host: String
+        proxy: String,
+        transport: DnsSrvLookupManager.Transport = DnsSrvLookupManager.Transport.UDP,
     ): String {
-        return buildString {
-            append("sip:")
-            if (originalProxy.isNullOrBlank()) {
-                append("$username@$host")
-            } else {
-                if (!resolvedProxy.isNullOrBlank() &&
-                    !resolvedProxy.startsWith("sip:") &&
-                    !resolvedProxy.startsWith("<sip:") &&
-                    !resolvedProxy.startsWith("sips:") &&
-                    !resolvedProxy.startsWith("<sips:")
-                ) {
-                    append(resolvedProxy)
-                } else {
-                    append(resolvedProxy?.removePrefix("<")?.removePrefix(">"))
-                }
-            }
-        }
+        // Strip any existing scheme and angle brackets, then re-apply the scheme that matches
+        // transport. This ensures sips:/sip: and TransportType are never inconsistent.
+        val bare =
+            proxy
+                .removePrefix("<")
+                .removeSuffix(">")
+                .removePrefix("sips:")
+                .removePrefix("sip:")
+        val scheme = if (transport == DnsSrvLookupManager.Transport.TLS) "sips" else "sip"
+        return "$scheme:$bare"
     }
 
     override fun clearCredentials() {
@@ -369,31 +453,66 @@ class LinbridgeManager @Inject constructor(
     }
 
     override fun onAccountRegistrationStateChanged(core: Core, account: Account, state: RegistrationState?, message: String) {
-        if (state == RegistrationState.Failed && isSrvRecordAvailable) {
+        if (state == RegistrationState.Failed && canRetryFallbackSrv()) {
             registrationState = RegistrationState.Refreshing
-            tryNextPossibleSRVRecord()
+            tryFallbackSrv()
         } else {
             registrationState = state
         }
 
     }
 
-    private fun tryNextPossibleSRVRecord() {
-        if (currentSrvIndex <= possibleSrvRecords.size -1) {
-            LinphoneScope.launch {
-                authenticate(
-                    host = core.defaultAccount?.params?.domain.toString(),
-                    port = core.defaultAccount?.params?.serverAddress?.port ?: 5060,
-                    authId = core.defaultAccount?.params?.identityAddress?.username,
-                    username = core.defaultAccount?.params?.identityAddress?.username ?: "",
-                    password = core.defaultAccount?.params?.identityAddress?.username ?: "",
-                    proxy = core.defaultAccount?.params?.serverAddress?.asStringUriOnly()
-                )
-            }
-        } else {
-            Timber.i("No more SRV records to try")
-            registrationState = RegistrationState.Failed
+    private fun canRetryFallbackSrv(): Boolean {
+        if (!srvFallbackEnabled) return false // explicit port supplied — SRV must not override
+        if (lastSrvDomain.isNullOrBlank()) return false // no domain to do SRV on
+        if (!fallbackAttempted) return true // haven't tried fallback DNS yet
+        return fallbackSrvIndex < fallbackSrvRecords.size // still have records to try
+    }
+
+    private fun tryFallbackSrv() {
+        if (fallbackJob?.isActive == true) {
+            Timber.i("Fallback SRV attempt already in progress, ignoring duplicate trigger")
+            return
         }
+        fallbackJob =
+            LinphoneScope.launch {
+                // On first failure, perform SRV lookup via system DNS + Google DNS fallback
+                if (!fallbackAttempted) {
+                    fallbackAttempted = true
+                    val proxy = lastSrvDomain ?: return@launch
+                    Timber.i("Native SRV registration failed, attempting fallback SRV lookup for $proxy")
+                    fallbackSrvRecords = DnsSrvLookupManager.lookupSipSrvRecords(proxy, sips = lastSrvSips)
+                    fallbackSrvIndex = 0
+
+                    if (fallbackSrvRecords.isEmpty()) {
+                        Timber.i("No fallback SRV records found, registration failed")
+                        registrationState = RegistrationState.Failed
+                        return@launch
+                    }
+                }
+
+                if (fallbackSrvIndex < fallbackSrvRecords.size) {
+                    val record = fallbackSrvRecords[fallbackSrvIndex]
+                    fallbackSrvIndex++
+                    Timber.i(
+                        "Trying fallback SRV record: ${record.target}:${record.port} " +
+                            "(priority=${record.priority}, weight=${record.weight}, " +
+                            "$fallbackSrvIndex/${fallbackSrvRecords.size})",
+                    )
+                    registerAccount(
+                        host = lastAuthHost ?: return@launch,
+                        authId = lastAuthId,
+                        username = lastAuthUsername ?: return@launch,
+                        password = lastPassword ?: return@launch,
+                        proxy = record.target,
+                        explicitPort = record.port,
+                        srvTransport = record.transport,
+                    )
+                } else {
+                    Timber.i("All fallback SRV records exhausted, registration failed")
+                    registrationState = RegistrationState.Failed
+                }
+            }
     }
     @Deprecated("Deprecated in Java", ReplaceWith("TODO(\"Not yet implemented\")"))
     override fun onRegistrationStateChanged(
@@ -558,9 +677,12 @@ fun Core.enableCodecs(types: Array<AudioCodec>?) {
     audioPayloadTypes.forEach { payloadType ->
         val audioCodec = AudioCodec.getAudioCodecByMimeAndRate(payloadType.mimeType, payloadType.clockRate)
         payloadType.enable(
-            (types.isNullOrEmpty() && audioCodec != null) || //  if not specifying codecs to open and the codec is supported by bell
-                    types?.contains(audioCodec) ?: false
-        ) // if codec is in the enabled codecs list
+            if (types.isNullOrEmpty()) {
+                audioCodec != null // enable all codecs known to the AudioCodec enum
+            } else {
+                audioCodec != null && types.contains(audioCodec) // enable only explicitly requested codecs
+            },
+        )
     }
 }
 
