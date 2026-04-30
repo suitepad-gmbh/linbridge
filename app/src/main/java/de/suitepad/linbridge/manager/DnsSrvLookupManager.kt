@@ -55,16 +55,20 @@ object DnsSrvLookupManager {
      * and concatenated in transport order so that retry sequences stay within one transport
      * before falling through to the next.
      */
-    suspend fun lookupSipSrvRecords(domain: String, sips: Boolean = false): List<SrvResult> =
+    suspend fun lookupSipSrvRecords(
+        domain: String,
+        sips: Boolean = false,
+    ): List<SrvResult> =
         withContext(Dispatchers.IO) {
-            val services = if (sips) {
-                listOf("_sips._tcp.$domain" to Transport.TLS)
-            } else {
-                listOf(
-                    "_sip._udp.$domain" to Transport.UDP,
-                    "_sip._tcp.$domain" to Transport.TCP,
-                )
-            }
+            val services =
+                if (sips) {
+                    listOf("_sips._tcp.$domain" to Transport.TLS)
+                } else {
+                    listOf(
+                        "_sip._udp.$domain" to Transport.UDP,
+                        "_sip._tcp.$domain" to Transport.TCP,
+                    )
+                }
             val results = mutableListOf<SrvResult>()
             for ((serviceDomain, transport) in services) {
                 lookupSrvRecords(serviceDomain)
@@ -137,8 +141,12 @@ object DnsSrvLookupManager {
                 records
                     ?.mapNotNull { it as? SRVRecord }
                     // RFC 2782: target "." means the service is decidedly not available.
-                    ?.filter { it.target.toString().trimEnd('.').isNotEmpty() }
-                    ?.map { SrvResult(it.target.toString().trimEnd('.'), it.port, it.priority, it.weight) }
+                    ?.filter {
+                        it.target
+                            .toString()
+                            .trimEnd('.')
+                            .isNotEmpty()
+                    }?.map { SrvResult(it.target.toString().trimEnd('.'), it.port, it.priority, it.weight) }
                     ?: emptyList()
             weightedSrvOrder(raw)
         } catch (e: Exception) {

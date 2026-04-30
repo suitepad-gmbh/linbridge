@@ -7,16 +7,22 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DnsSrvLookupManagerTest {
+    companion object {
+        private const val HOST_A = "a.example.com"
+        private const val HOST_B = "b.example.com"
+        private const val HOST_C = "c.example.com"
+    }
 
     // --- Priority ordering ---
 
     @Test
-    fun `weightedSrvOrder sorts by priority ascending`() {
-        val records = listOf(
-            SrvResult("c.example.com", 5060, priority = 30, weight = 0),
-            SrvResult("a.example.com", 5060, priority = 10, weight = 0),
-            SrvResult("b.example.com", 5060, priority = 20, weight = 0),
-        )
+    fun weightedSrvOrderSortsByPriorityAscending() {
+        val records =
+            listOf(
+                SrvResult(HOST_C, 5060, priority = 30, weight = 0),
+                SrvResult(HOST_A, 5060, priority = 10, weight = 0),
+                SrvResult(HOST_B, 5060, priority = 20, weight = 0),
+            )
         val ordered = DnsSrvLookupManager.weightedSrvOrder(records)
         assertEquals(10, ordered[0].priority)
         assertEquals(20, ordered[1].priority)
@@ -24,25 +30,26 @@ class DnsSrvLookupManagerTest {
     }
 
     @Test
-    fun `weightedSrvOrder returns all records`() {
-        val records = listOf(
-            SrvResult("a.example.com", 5060, priority = 10, weight = 50),
-            SrvResult("b.example.com", 5060, priority = 10, weight = 30),
-            SrvResult("c.example.com", 5060, priority = 20, weight = 10),
-        )
+    fun weightedSrvOrderReturnsAllRecords() {
+        val records =
+            listOf(
+                SrvResult(HOST_A, 5060, priority = 10, weight = 50),
+                SrvResult(HOST_B, 5060, priority = 10, weight = 30),
+                SrvResult(HOST_C, 5060, priority = 20, weight = 10),
+            )
         val ordered = DnsSrvLookupManager.weightedSrvOrder(records)
         assertEquals(records.size, ordered.size)
         assertTrue(ordered.containsAll(records))
     }
 
     @Test
-    fun `weightedSrvOrder with empty list returns empty`() {
+    fun weightedSrvOrderWithEmptyListReturnsEmpty() {
         assertEquals(emptyList<SrvResult>(), DnsSrvLookupManager.weightedSrvOrder(emptyList()))
     }
 
     @Test
-    fun `weightedSrvOrder with single record returns it`() {
-        val record = SrvResult("a.example.com", 5060, priority = 10, weight = 100)
+    fun weightedSrvOrderWithSingleRecordReturnsIt() {
+        val record = SrvResult(HOST_A, 5060, priority = 10, weight = 100)
         val ordered = DnsSrvLookupManager.weightedSrvOrder(listOf(record))
         assertEquals(listOf(record), ordered)
     }
@@ -50,7 +57,7 @@ class DnsSrvLookupManagerTest {
     // --- Weighted selection within priority group ---
 
     @Test
-    fun `weightedSrvOrder higher weight records are selected more often`() {
+    fun weightedSrvOrderHigherWeightRecordsAreSelectedMoreOften() {
         val heavy = SrvResult("heavy.example.com", 5060, priority = 10, weight = 100)
         val light = SrvResult("light.example.com", 5060, priority = 10, weight = 1)
         val records = listOf(heavy, light)
@@ -72,12 +79,13 @@ class DnsSrvLookupManagerTest {
     // --- Weight-0 RFC 2782 compliance ---
 
     @Test
-    fun `weightedSrvOrder all-zero weights distributes selections randomly`() {
-        val records = listOf(
-            SrvResult("a.example.com", 5060, priority = 10, weight = 0),
-            SrvResult("b.example.com", 5060, priority = 10, weight = 0),
-            SrvResult("c.example.com", 5060, priority = 10, weight = 0),
-        )
+    fun weightedSrvOrderAllZeroWeightsDistributesSelectionsRandomly() {
+        val records =
+            listOf(
+                SrvResult(HOST_A, 5060, priority = 10, weight = 0),
+                SrvResult(HOST_B, 5060, priority = 10, weight = 0),
+                SrvResult(HOST_C, 5060, priority = 10, weight = 0),
+            )
         val firstCounts = mutableMapOf<String, Int>()
         val iterations = 1000
         repeat(iterations) {
@@ -96,7 +104,7 @@ class DnsSrvLookupManagerTest {
     }
 
     @Test
-    fun `weightedSrvOrder weight-0 records have small but nonzero chance in mixed pool`() {
+    fun weightedSrvOrderWeight0RecordsHaveSmallButNonzeroChanceInMixedPool() {
         // RFC 2782: "records with weight 0 should have a very small chance of being selected"
         val zeroWeight = SrvResult("zero.example.com", 5060, priority = 10, weight = 0)
         val nonZero = SrvResult("heavy.example.com", 5060, priority = 10, weight = 100)
@@ -123,13 +131,14 @@ class DnsSrvLookupManagerTest {
     // --- Multiple priority groups ---
 
     @Test
-    fun `weightedSrvOrder preserves priority ordering across groups`() {
-        val records = listOf(
-            SrvResult("low1.example.com", 5060, priority = 10, weight = 50),
-            SrvResult("low2.example.com", 5060, priority = 10, weight = 50),
-            SrvResult("high1.example.com", 5060, priority = 20, weight = 50),
-            SrvResult("high2.example.com", 5060, priority = 20, weight = 50),
-        )
+    fun weightedSrvOrderPreservesPriorityOrderingAcrossGroups() {
+        val records =
+            listOf(
+                SrvResult("low1.example.com", 5060, priority = 10, weight = 50),
+                SrvResult("low2.example.com", 5060, priority = 10, weight = 50),
+                SrvResult("high1.example.com", 5060, priority = 20, weight = 50),
+                SrvResult("high2.example.com", 5060, priority = 20, weight = 50),
+            )
         repeat(100) {
             val ordered = DnsSrvLookupManager.weightedSrvOrder(records)
             // First two must be from priority 10, last two from priority 20.
@@ -143,11 +152,12 @@ class DnsSrvLookupManagerTest {
     // --- Transport field is preserved ---
 
     @Test
-    fun `weightedSrvOrder preserves transport field`() {
-        val records = listOf(
-            SrvResult("a.example.com", 5060, priority = 10, weight = 10, transport = Transport.TLS),
-            SrvResult("b.example.com", 5060, priority = 10, weight = 10, transport = Transport.UDP),
-        )
+    fun weightedSrvOrderPreservesTransportField() {
+        val records =
+            listOf(
+                SrvResult(HOST_A, 5060, priority = 10, weight = 10, transport = Transport.TLS),
+                SrvResult(HOST_B, 5060, priority = 10, weight = 10, transport = Transport.UDP),
+            )
         val ordered = DnsSrvLookupManager.weightedSrvOrder(records)
         val transports = ordered.map { it.transport }.toSet()
         assertEquals(setOf(Transport.TLS, Transport.UDP), transports)
