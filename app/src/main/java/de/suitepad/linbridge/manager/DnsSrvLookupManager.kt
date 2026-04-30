@@ -77,10 +77,12 @@ object DnsSrvLookupManager {
     /**
      * Orders SRV results per RFC 2782:
      * - Priority groups are ordered ascending (lowest value first).
-     * - Within each priority group, records are selected via weighted random ordering:
-     *   each record's probability of being chosen next is proportional to its weight.
-     *   Records with weight 0 are still eligible but only selected when the running sum
-     *   target is 0 (i.e. all remaining weights are also 0).
+     * - Within each priority group, records are selected via weighted random ordering.
+     *   The random target W is chosen in [0, totalWeight] (inclusive). Weight-0 records
+     *   are placed first in the pool so they have a small but non-zero chance of being
+     *   selected (when W == 0), matching the RFC requirement:
+     *   "records with weight 0 should have a very small chance of being selected."
+     * - When all remaining weights are 0, a uniformly random element is picked.
      */
     internal fun weightedSrvOrder(records: List<SrvResult>): List<SrvResult> {
         val ordered = mutableListOf<SrvResult>()
@@ -89,7 +91,8 @@ object DnsSrvLookupManager {
             .entries
             .sortedBy { it.key }
             .forEach { (_, group) ->
-                val pool = group.toMutableList()
+                // Sort weight-0 records first per RFC 2782 so they can be selected when W == 0.
+                val pool = group.sortedBy { it.weight }.toMutableList()
                 while (pool.isNotEmpty()) {
                     val totalWeight = pool.sumOf { it.weight }
                     val selected: SrvResult
@@ -98,13 +101,15 @@ object DnsSrvLookupManager {
                         // records don't always resolve in the same insertion order.
                         selected = pool.removeAt(Random.nextInt(pool.size))
                     } else {
-                        var target = Random.nextInt(totalWeight) + 1
+                        // W in [0, totalWeight]: 0 allows weight-0 records to be picked.
+                        var w = Random.nextInt(totalWeight + 1)
                         val iterator = pool.iterator()
                         var pick: SrvResult? = null
+                        var runningSum = 0
                         while (iterator.hasNext()) {
                             val candidate = iterator.next()
-                            target -= candidate.weight
-                            if (target <= 0) {
+                            runningSum += candidate.weight
+                            if (runningSum >= w) {
                                 pick = candidate
                                 iterator.remove()
                                 break
@@ -131,6 +136,8 @@ object DnsSrvLookupManager {
             val raw =
                 records
                     ?.mapNotNull { it as? SRVRecord }
+                    // RFC 2782: target "." means the service is decidedly not available.
+                    ?.filter { it.target.toString().trimEnd('.').isNotEmpty() }
                     ?.map { SrvResult(it.target.toString().trimEnd('.'), it.port, it.priority, it.weight) }
                     ?: emptyList()
             weightedSrvOrder(raw)
