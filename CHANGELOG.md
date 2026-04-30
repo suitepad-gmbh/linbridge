@@ -1,4 +1,7 @@
 # CHANGELOG
+### 2.2.0
+- MITEL certification: Fix mandatory codec and SRV support
+
 ### 2.1.1
 - FIX: crash on Android 6
 - FIX: double ringtone
