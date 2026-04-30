@@ -64,6 +64,7 @@ class LinbridgeManager @Inject constructor(
 
     // Effective host normalized to a plain DNS label for SRV lookups (no scheme/brackets/port/params)
     private var lastSrvDomain: String? = null
+    private var lastSrvSips: Boolean = false
 
     // Fallback SRV state (used when linphone's native SRV resolution fails)
     private var srvFallbackEnabled = false // false when any explicit port is known (port arg or proxy string)
@@ -164,6 +165,7 @@ class LinbridgeManager @Inject constructor(
         // then normalize to a plain hostname for DNS SRV lookups.
         val effectiveProxy = proxy?.takeIf { it.isNotBlank() } ?: host
         lastSrvDomain = extractSrvDomain(effectiveProxy)
+        lastSrvSips = effectiveProxy.removePrefix("<").startsWith("sips:")
 
         // Reset fallback state on fresh authentication
         fallbackSrvRecords = emptyList()
@@ -479,7 +481,7 @@ class LinbridgeManager @Inject constructor(
                     fallbackAttempted = true
                     val proxy = lastSrvDomain ?: return@launch
                     Timber.i("Native SRV registration failed, attempting fallback SRV lookup for $proxy")
-                    fallbackSrvRecords = DnsSrvLookupManager.lookupSipSrvRecords(proxy)
+                    fallbackSrvRecords = DnsSrvLookupManager.lookupSipSrvRecords(proxy, sips = lastSrvSips)
                     fallbackSrvIndex = 0
 
                     if (fallbackSrvRecords.isEmpty()) {

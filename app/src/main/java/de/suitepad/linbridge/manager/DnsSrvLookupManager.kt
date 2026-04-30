@@ -48,26 +48,30 @@ object DnsSrvLookupManager {
 
     /**
      * Queries SRV records for standard SIP service types per RFC 3263.
-     * Queries: _sip._udp (UDP), _sip._tcp (TCP), _sips._tcp (TLS)
+     * When [sips] is true, only queries _sips._tcp (TLS).
+     * When [sips] is false (default), queries _sip._udp (UDP) and _sip._tcp (TCP).
      * Each result carries the transport it was discovered under.
-     * Results are ordered per RFC 2782: priority groups ascending, within each group
-     * records are selected by weighted random ordering.
+     * Per-transport results are individually ordered per RFC 2782 (priority + weighted random)
+     * and concatenated in transport order so that retry sequences stay within one transport
+     * before falling through to the next.
      */
-    suspend fun lookupSipSrvRecords(domain: String): List<SrvResult> =
+    suspend fun lookupSipSrvRecords(domain: String, sips: Boolean = false): List<SrvResult> =
         withContext(Dispatchers.IO) {
-            val services =
+            val services = if (sips) {
+                listOf("_sips._tcp.$domain" to Transport.TLS)
+            } else {
                 listOf(
                     "_sip._udp.$domain" to Transport.UDP,
                     "_sip._tcp.$domain" to Transport.TCP,
-                    "_sips._tcp.$domain" to Transport.TLS,
                 )
+            }
             val results = mutableListOf<SrvResult>()
             for ((serviceDomain, transport) in services) {
                 lookupSrvRecords(serviceDomain)
                     .map { it.copy(transport = transport) }
                     .also { results.addAll(it) }
             }
-            weightedSrvOrder(results)
+            results
         }
 
     /**
@@ -88,21 +92,25 @@ object DnsSrvLookupManager {
                 val pool = group.toMutableList()
                 while (pool.isNotEmpty()) {
                     val totalWeight = pool.sumOf { it.weight }
-                    var target = if (totalWeight > 0) Random.nextInt(totalWeight) + 1 else 0
-                    val iterator = pool.iterator()
-                    var selected: SrvResult? = null
-                    while (iterator.hasNext()) {
-                        val candidate = iterator.next()
-                        target -= candidate.weight
-                        if (target <= 0) {
-                            selected = candidate
-                            iterator.remove()
-                            break
+                    val selected: SrvResult
+                    if (totalWeight == 0) {
+                        // All weights are zero: pick a random element so equal-weight
+                        // records don't always resolve in the same insertion order.
+                        selected = pool.removeAt(Random.nextInt(pool.size))
+                    } else {
+                        var target = Random.nextInt(totalWeight) + 1
+                        val iterator = pool.iterator()
+                        var pick: SrvResult? = null
+                        while (iterator.hasNext()) {
+                            val candidate = iterator.next()
+                            target -= candidate.weight
+                            if (target <= 0) {
+                                pick = candidate
+                                iterator.remove()
+                                break
+                            }
                         }
-                    }
-                    // Fallback: if no record was selected (all weights 0), take the first
-                    if (selected == null) {
-                        selected = pool.removeFirst()
+                        selected = pick ?: pool.removeFirst()
                     }
                     ordered.add(selected)
                 }
