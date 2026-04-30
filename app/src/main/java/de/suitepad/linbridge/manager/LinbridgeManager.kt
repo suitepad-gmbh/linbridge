@@ -66,7 +66,7 @@ class LinbridgeManager @Inject constructor(
     private var lastSrvDomain: String? = null
 
     // Fallback SRV state (used when linphone's native SRV resolution fails)
-    private var srvFallbackEnabled = false // false when caller supplied an explicit non-default port
+    private var srvFallbackEnabled = false // false when any explicit port is known (port arg or proxy string)
     private var fallbackSrvRecords: List<DnsSrvLookupManager.SrvResult> = emptyList()
     private var fallbackSrvIndex = 0
     private var fallbackAttempted = false
@@ -171,11 +171,23 @@ class LinbridgeManager @Inject constructor(
         fallbackAttempted = false
 
         // Primary path: let linphone's native SRV handle resolution (isDnsSrvEnabled = true).
-        // Only pass an explicit port when it differs from the SIP default (5060); a non-default
-        // port means the caller is targeting a specific endpoint and SRV should not override it.
-        val explicitPort = port.takeIf { it != DEFAULT_SIP_PORT }
+        // Disable SRV fallback whenever an explicit target port is known — either from the port
+        // argument (non-default) or from a port encoded in the proxy string (e.g.
+        // "proxy.example.com:5080"). In both cases we are targeting a specific endpoint and SRV
+        // must not override it.
+        val explicitPort =
+            port.takeIf { it != DEFAULT_SIP_PORT }
+                ?: extractPortFromAddress(effectiveProxy)
         srvFallbackEnabled = explicitPort == null
-        registerAccount(host, authId, username, password, effectiveProxy, explicitPort = explicitPort)
+        // Derive transport from the proxy scheme so the primary registration is consistent:
+        // sips: → TLS, everything else → UDP (TCP is only used via fallback SRV records).
+        val initialTransport =
+            if (effectiveProxy.removePrefix("<").startsWith("sips:")) {
+                DnsSrvLookupManager.Transport.TLS
+            } else {
+                DnsSrvLookupManager.Transport.UDP
+            }
+        registerAccount(host, authId, username, password, effectiveProxy, explicitPort = explicitPort, srvTransport = initialTransport)
     }
 
     private fun registerAccount(
@@ -246,6 +258,8 @@ class LinbridgeManager @Inject constructor(
      * from a SIP address, returning a plain hostname suitable for DNS SRV queries.
      */
     private fun extractSrvDomain(address: String): String {
+        // Reuse extractPortFromAddress parsing; see that method for the stripping logic.
+        // (Duplicate stripping here is intentional to keep extractSrvDomain self-contained.)
         var d = address.removePrefix("<").removeSuffix(">")
         d = d.removePrefix("sips:").removePrefix("sip:")
         if ('@' in d) d = d.substringAfter('@')
@@ -254,17 +268,37 @@ class LinbridgeManager @Inject constructor(
         return d
     }
 
+    /**
+     * Returns the explicit port encoded in a SIP address string (bare host:port, or sip:/sips: URI),
+     * or null when no port is present. Used to detect caller-specified endpoints that SRV must not
+     * override.
+     */
+    private fun extractPortFromAddress(address: String): Int? {
+        var d = address.removePrefix("<").removeSuffix(">")
+        d = d.removePrefix("sips:").removePrefix("sip:")
+        if ('@' in d) d = d.substringAfter('@')
+        d = d.substringBefore(';')
+        return Regex(":(\\d+)$")
+            .find(d)
+            ?.groupValues
+            ?.get(1)
+            ?.toIntOrNull()
+    }
+
     private fun buildSipProxy(
         proxy: String,
         transport: DnsSrvLookupManager.Transport = DnsSrvLookupManager.Transport.UDP,
     ): String {
-        if (proxy.startsWith("sip:") || proxy.startsWith("sips:") ||
-            proxy.startsWith("<sip:") || proxy.startsWith("<sips:")
-        ) {
-            return proxy.removePrefix("<").removeSuffix(">")
-        }
+        // Strip any existing scheme and angle brackets, then re-apply the scheme that matches
+        // transport. This ensures sips:/sip: and TransportType are never inconsistent.
+        val bare =
+            proxy
+                .removePrefix("<")
+                .removeSuffix(">")
+                .removePrefix("sips:")
+                .removePrefix("sip:")
         val scheme = if (transport == DnsSrvLookupManager.Transport.TLS) "sips" else "sip"
-        return "$scheme:$proxy"
+        return "$scheme:$bare"
     }
 
     override fun clearCredentials() {
