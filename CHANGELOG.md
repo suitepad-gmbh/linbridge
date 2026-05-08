@@ -1,4 +1,8 @@
 # CHANGELOG
+### 2.2.1
+- Rate-limit network reset on reg. failure
+- Remove DNS SRV fallback and simplify LinbridgeManager
+
 ### 2.2.0
 - MITEL certification: Fix mandatory codec and SRV support
 
