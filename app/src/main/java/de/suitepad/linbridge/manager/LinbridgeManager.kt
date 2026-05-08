@@ -54,6 +54,10 @@ class LinbridgeManager @Inject constructor(
 
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private var micMuteSupported = true
+    private var lastNetworkResetTime = 0L
+    private companion object {
+        const val NETWORK_RESET_COOLDOWN_MS = 35_000L
+    }
 
     val keepAliveTask = object : TimerTask() {
         override fun run() {
@@ -357,12 +361,17 @@ class LinbridgeManager @Inject constructor(
     override fun onAccountRegistrationStateChanged(core: Core, account: Account, state: RegistrationState?, message: String) {
         registrationState = state
 
+        if (state == RegistrationState.Ok) {
+            lastNetworkResetTime = 0L
+        }
+
         // When registration fails (e.g., channel timeout to unreachable server), force a network
         // reset so belle-sip tears down stale channels and re-resolves SRV from scratch on retry.
         // This works around a linphone 5.4.x bug where a stale UDP socket (Bad file descriptor)
         // prevents successful failover to secondary SRV targets.
+        // Cooldown prevents tight retry loops when all servers are unreachable; linphone's own
+        // exponential backoff takes over once the cooldown suppresses the reset.
         if (state == RegistrationState.Failed) {
-            Timber.i("Registration failed, triggering network reset for SRV re-resolution")
             triggerNetworkReset()
         }
     }
@@ -371,8 +380,19 @@ class LinbridgeManager @Inject constructor(
      * Forces belle-sip to tear down all existing channels and re-resolve DNS/SRV on the next
      * registration attempt. This is the recommended workaround for mid-session server failures
      * where the existing channel is bound to an unreachable IP.
+     *
+     * A cooldown prevents tight retry loops when all servers are unreachable; after one reset,
+     * subsequent calls within [NETWORK_RESET_COOLDOWN_MS] are suppressed and linphone's built-in
+     * exponential backoff handles retries instead.
      */
     private fun triggerNetworkReset() {
+        val now = System.currentTimeMillis()
+        if (now - lastNetworkResetTime < NETWORK_RESET_COOLDOWN_MS) {
+            Timber.i("Network reset suppressed (cooldown), letting linphone backoff handle retry")
+            return
+        }
+        lastNetworkResetTime = now
+        Timber.i("Triggering network reset for SRV re-resolution")
         core.isNetworkReachable = false
         core.isNetworkReachable = true
     }
