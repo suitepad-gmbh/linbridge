@@ -115,7 +115,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:27.1.0"))
     implementation("com.google.firebase:firebase-crashlytics-ktx:17.1.0")
     //implementation("org.linphone:linphone-sdk-android:5.5+")
-    implementation("org.linphone.no-video:linphone-sdk-android:5.4.1")
+    implementation("org.linphone:linphone-sdk-android:5.4.111")
 }
 
 apply(plugin = "com.google.gms.google-services")
