@@ -629,6 +629,12 @@ fun Core.maybeConfigureDevice() {
             config.setFloat("sound", "playback_gain_db", 3.0f);
             config.setInt("sound", "agc", 0) // AGC off -> doesn't do much, can confuse the noise gate
             config.setInt("sound", "ec_tail_len", 250)
+
+            // The MK4 microphone path, measured against a reference mic before any processing, is about +9 dB at
+            // 200 Hz and -10 to -14 dB at 2-4 kHz, which makes speech sound muffled. Correct most of it:
+            // frequency:linear gain:width (Hz); 0.5 = -6 dB, 2.5 = +8 dB.
+            config.setInt("sound", "mic_eq_active", 1)
+            config.setString("sound", "mic_eq_gains", "200:0.5:200 3000:2.5:2000")
             mediastreamerFactory.setDeviceInfo(
                 "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
                 org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 250, 0
