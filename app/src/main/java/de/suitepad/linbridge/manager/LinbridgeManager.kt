@@ -632,9 +632,14 @@ fun Core.maybeConfigureDevice() {
 
             // The MK4 microphone path, measured against a reference mic before any processing, is about +9 dB at
             // 200 Hz and -10 to -14 dB at 2-4 kHz, which makes speech sound muffled. Correct most of it:
-            // frequency:linear gain:width (Hz); 0.5 = -6 dB, 2.5 = +8 dB.
+            // MediaTek's VoIP processing adds a bump around 1250 Hz on top. Relative to 0.5-1 kHz the curve gives
+            // about -5 dB at 200 and 1250 Hz, +8 dB at 2.5 kHz and +12 dB at 3-3.4 kHz (PCMA ends at 3.4 kHz); it was
+            // fitted to and checked against what test calls actually sent. Format frequency:linear gain:width (Hz).
+            // The SDK's fixed-point equalizer overflows, and inverts its response, when the average gain across the
+            // band exceeds about 1.6x, so the highs are raised partly by cutting the low mids. That costs about 3 dB of
+            // level.
             config.setInt("sound", "mic_eq_active", 1)
-            config.setString("sound", "mic_eq_gains", "200:0.5:200 3000:2.5:2000")
+            config.setString("sound", "mic_eq_gains", "200:0.4:250 1100:0.71:1200 1250:0.56:300 3100:3.0:1200")
             mediastreamerFactory.setDeviceInfo(
                 "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
                 org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 250, 0
