@@ -41,6 +41,12 @@ import javax.inject.Inject
 
 private const val DEFAULT_SIP_PORT = 5060
 
+// Linphone mic gain on the MK4 (Android 10), added to the gain Bell configures. It makes up for the level the MK4
+// microphone equalizer takes away plus a little more; +8 dB raised the noise floor too much.
+private const val MK4_MIC_GAIN_DB = 5f
+
+private fun deviceMicGainDb() = if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) MK4_MIC_GAIN_DB else 0f
+
 @RequiresApi(Build.VERSION_CODES.O)
 @ServiceScoped
 class LinbridgeManager @Inject constructor(
@@ -547,7 +553,7 @@ class LinbridgeManager @Inject constructor(
 }
 
 fun Core.configure(settings: AudioConfiguration) {
-    micGainDb = settings.microphoneGain.toFloat()
+    micGainDb = settings.microphoneGain + deviceMicGainDb()
     playbackGainDb = settings.speakerGain.toFloat()
     if (hasBuiltinEchoCanceller()) {
         isEchoCancellationEnabled = settings.echoCancellation
@@ -605,7 +611,7 @@ fun Core.maybeConfigureDevice() {
             // needs to be paired with EngineeringMode mic gain = 200
 
             // gain settings (will be applied on top of EngineeringMode App gain settings)
-            micGainDb = 3.0f
+            micGainDb = MK4_MIC_GAIN_DB
             playbackGainDb = 3.0f
 
             // misc settings
@@ -625,10 +631,21 @@ fun Core.maybeConfigureDevice() {
             // more configuration
             config.setInt("sound", "echocancellation", 1)
             config.setInt("sound", "echolimiter", 0)
-            config.setFloat("sound", "mic_gain_db", 3.0f);
+            config.setFloat("sound", "mic_gain_db", MK4_MIC_GAIN_DB)
             config.setFloat("sound", "playback_gain_db", 3.0f);
             config.setInt("sound", "agc", 0) // AGC off -> doesn't do much, can confuse the noise gate
             config.setInt("sound", "ec_tail_len", 250)
+
+            // The MK4 microphone path, measured against a reference mic before any processing, is about +9 dB at
+            // 200 Hz and -10 to -14 dB at 2-4 kHz, which makes speech sound muffled. Correct most of it:
+            // MediaTek's VoIP processing adds a bump around 1250 Hz on top. Relative to 0.5-1 kHz the curve gives
+            // about -5 dB at 200 and 1250 Hz, +8 dB at 2.5 kHz and +12 dB at 3-3.4 kHz (PCMA ends at 3.4 kHz); it was
+            // fitted to and checked against what test calls actually sent. Format frequency:linear gain:width (Hz).
+            // The SDK's fixed-point equalizer overflows, and inverts its response, when the average gain across the
+            // band exceeds about 1.6x, so the highs are raised partly by cutting the low mids. That costs about 3 dB of
+            // level, which MK4_MIC_GAIN_DB makes up.
+            config.setInt("sound", "mic_eq_active", 1)
+            config.setString("sound", "mic_eq_gains", "200:0.4:250 1100:0.71:1200 1250:0.56:300 3100:3.0:1200")
             mediastreamerFactory.setDeviceInfo(
                 "alps", "tb8168p1_64_l_d4x_qy_fhd_bsp", "mt8168",
                 org.linphone.mediastream.Factory.DEVICE_HAS_BUILTIN_AEC_CRAPPY, 250, 0
